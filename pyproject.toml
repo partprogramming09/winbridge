@@ -20,7 +20,7 @@ classifiers = [
 dependencies = [
     # 4.x is outside the reviewed upstream 0.4.24 base; the Windows lock also
     # enforces this ceiling. Re-test before raising it.
-    "fastmcp>=3.2.0,<4",
+    "fastmcp>=3.2.0,<5",
     "pyautogui>=0.9.54",
     "psutil>=5.9.0",
     "pywin32>=306; sys_platform == 'win32'",
