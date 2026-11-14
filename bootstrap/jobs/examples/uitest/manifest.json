@@ -1,0 +1,10 @@
+{
+  "apps": {
+    "ise": {
+      "path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\PowerShell_ISE.exe",
+      "window_title": "Windows.PowerShell ISE",
+      "description": "PowerShell ISE (WPF): buttons with real UI Automation patterns. TEST ONLY: it gives a PowerShell editor to whoever can type into it; do not install it for normal use"
+    }
+  },
+  "jobs": {}
+}

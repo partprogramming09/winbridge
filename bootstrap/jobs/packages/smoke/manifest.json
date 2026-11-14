@@ -1,0 +1,18 @@
+{
+  "apps": {
+    "winver": {
+      "path": "C:\\Windows\\System32\\winver.exe",
+      "window_title": "About Windows|Acerca de Windows",
+      "description": "The Windows version dialog: a small classic program to check app-run and app-stop"
+    }
+  },
+  "jobs": {
+    "smoke": {
+      "script": "smoke.ps1",
+      "timeout_s": 30,
+      "session": 1,
+      "description": "Reports the account, session id and elevation the runner gives a job; use it to check an install",
+      "params": { "Word": "^[a-z]{1,20}$" }
+    }
+  }
+}

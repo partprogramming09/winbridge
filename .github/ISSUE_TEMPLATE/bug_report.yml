@@ -1,0 +1,42 @@
+name: Bug report
+description: Something does not work as the README or the operating guide says
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Do not paste keys.** If this is a security problem, do not use this form: use *Report a vulnerability* in the Security tab.
+
+        Before you attach any output, remove: the Windows user name and `C:\Users\...` paths, the computer name, the
+        Tailscale address, and the Tailscale account e-mail. `winbridge doctor` prints all of them.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `winbridge version` and of `winbridge status` (the version it reports).
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Output of `winbridge doctor` (redacted)
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Windows version and PowerShell version
+      description: For example Windows 11 and PowerShell 5.1.

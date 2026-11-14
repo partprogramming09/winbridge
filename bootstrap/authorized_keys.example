@@ -1,0 +1,8 @@
+# WinBridge SSH public key placeholder.
+#
+# The Mac's PUBLIC key is injected here by tools/build_bundle.py:
+#   python tools/build_bundle.py --ssh-public-key-file ~/.ssh/winbridge.pub
+#
+# Never put a private key, a password, or the WinBridge auth key in this file.
+# One public key per line, OpenSSH format, for example:
+# ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExampleOnlyNotARealKey example@mac

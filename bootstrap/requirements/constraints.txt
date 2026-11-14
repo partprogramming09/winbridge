@@ -1,0 +1,6 @@
+# Reviewed resolution constraints for the Windows runtime lock.
+#
+# fastmcp 4.x is not part of the reviewed 0.4.24 base. The fork's tool
+# discovery supports fastmcp 2.x/3.x internals; keep the ceiling until an
+# upstream base that supports 4.x is adopted and re-tested.
+fastmcp>=3.2.0,<4

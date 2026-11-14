@@ -1,0 +1,35 @@
+# WinBridge managed configuration.
+# Rendered by bootstrap.ps1 from this template. Do not edit the installed copy:
+# rerun bootstrap.ps1 or use the management scripts instead.
+#
+# The auth key is NEVER stored here. It lives in Windows Credential Manager and
+# reaches the server through the supervisor's WINREMOTE_AUTH_KEY environment
+# variable. WINBRIDGE_STRICT=1 makes the server refuse any other profile.
+
+[server]
+# Tailscale address only. 0.0.0.0, ::, loopback and LAN addresses are refused.
+host = "{{TAILSCALE_IP}}"
+port = {{PORT}}
+allow_insecure_remote = false
+
+[security]
+# The host's own Tailscale address plus the reviewed client addresses.
+# Entries outside 100.64.0.0/10 and fd7a:115c:a1e0::/48 are rejected.
+ip_allowlist = [{{ALLOWED_CLIENTS}}]
+enable_tier3 = false
+disable_tier2 = false
+
+[tools]
+# Exactly these nine tools. Order is kept for readable diffs.
+enable = [
+    "Snapshot",
+    "Click",
+    "Type",
+    "Move",
+    "Scroll",
+    "Shortcut",
+    "FocusWindow",
+    "Wait",
+    "GetSystemInfo",
+]
+exclude = []

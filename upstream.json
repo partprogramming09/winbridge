@@ -1,0 +1,18 @@
+{
+  "project": "winremote-mcp",
+  "base_version": "0.4.24",
+  "base_tag": "v0.4.24",
+  "base_commit": "f177b74dfb1973d432054603bcab608def826b82",
+  "base_commit_date": "2026-09-30T11:13:29+08:00",
+  "artifacts": {
+    "wheel": {
+      "filename": "winremote_mcp-0.4.24-py3-none-any.whl",
+      "sha256": "a5d881503baaf01a56e64319709743f3aaa404ecb2b590a483c78dc2072be28d"
+    },
+    "sdist": {
+      "filename": "winremote_mcp-0.4.24.tar.gz",
+      "sha256": "1225c3529f914d1fecb9259d1598839b38e920f0ce51a35a4db016c8ccb916d6"
+    }
+  },
+  "note": "The fork starts at the exact v0.4.24 tag commit. The upstream artifacts above are recorded for audit only; the build uses this repository tree."
+}

@@ -1,0 +1,14 @@
+title = "WinBridge gitleaks config"
+
+[extend]
+useDefault = true
+
+# Fixtures that look like secrets but are fake test values or marker strings the tests search for.
+[[allowlists]]
+description = "fake keys and marker strings in tests"
+paths = [
+  '''agent/internal/parity/parity_test\.go''',
+  '''agent/internal/server/server_test\.go''',
+  '''tests/test_bootstrap_contract\.py''',
+  '''tools/test-bootstrap\.ps1''',
+]

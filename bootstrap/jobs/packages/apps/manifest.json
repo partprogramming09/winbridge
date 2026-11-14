@@ -1,0 +1,18 @@
+{
+  "jobs": {
+    "app-run": {
+      "script": "app-run.ps1",
+      "timeout_s": 40,
+      "session": 1,
+      "description": "Start an application from the apps registry, visible on the desktop, and report its pid and window",
+      "params": { "App": "^[A-Za-z0-9_-]{1,40}$", "AppArgs": "^[A-Za-z0-9 _.=:\\\\/-]{0,200}$" }
+    },
+    "app-stop": {
+      "script": "app-stop.ps1",
+      "timeout_s": 30,
+      "session": 1,
+      "description": "Stop the application app-run started, and everything it started",
+      "params": { "App": "^[A-Za-z0-9_-]{1,40}$" }
+    }
+  }
+}

@@ -1,0 +1,77 @@
+"""Unit tests for Shell, Scrape, App tools."""
+
+from __future__ import annotations
+
+from unittest.mock import MagicMock, patch
+
+import pytest
+from fastmcp.exceptions import ToolError
+
+
+def _call_tool(tool_name, **kwargs):
+    from winremote import __main__
+
+    tools = {
+        "App": __main__.App,
+        "Scrape": __main__.Scrape,
+        "Shell": __main__.Shell,
+    }
+    return tools[tool_name](**kwargs)
+
+
+class TestShell:
+    @patch("subprocess.run")
+    def test_shell_success(self, mock_run):
+        mock_run.return_value = MagicMock(stdout="hello", stderr="", returncode=0)
+        result = _call_tool("Shell", command="echo hello")
+        assert "hello" in result
+
+    @patch("subprocess.run")
+    def test_shell_stderr(self, mock_run):
+        mock_run.return_value = MagicMock(stdout="", stderr="error msg", returncode=1)
+        result = _call_tool("Shell", command="bad")
+        assert "STDERR" in result or "error" in result.lower()
+
+    @patch("subprocess.run")
+    def test_shell_timeout(self, mock_run):
+        import subprocess
+
+        mock_run.side_effect = subprocess.TimeoutExpired("cmd", 30)
+        with pytest.raises(ToolError, match="timed out"):
+            _call_tool("Shell", command="long", timeout=30)
+
+
+class TestScrape:
+    @patch("urllib.request.build_opener")
+    def test_scrape_success(self, mock_build_opener, monkeypatch):
+        import socket
+
+        monkeypatch.setattr(
+            socket,
+            "getaddrinfo",
+            lambda *args, **kwargs: [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 443))],
+        )
+        mock_resp = MagicMock()
+        mock_resp.read.return_value = b"<html><body><h1>Hello</h1></body></html>"
+        mock_resp.__enter__ = MagicMock(return_value=mock_resp)
+        mock_resp.__exit__ = MagicMock(return_value=False)
+        mock_build_opener.return_value.open.return_value = mock_resp
+        result = _call_tool("Scrape", url="https://example.com")
+        assert "Hello" in result or "task:" in result
+
+    def test_scrape_error(self):
+        with patch("urllib.request.build_opener", side_effect=Exception("network error")):
+            with pytest.raises(ToolError, match="Scrape error"):
+                _call_tool("Scrape", url="https://bad.url")
+
+
+class TestApp:
+    @patch("winremote.__main__.desktop")
+    def test_app_launch(self, mock_desktop):
+        mock_desktop.launch_app.return_value = "Launched notepad"
+        result = _call_tool("App", action="launch", name="notepad")
+        assert "Launched" in result or "task:" in result
+
+    def test_app_unknown_action(self):
+        with pytest.raises(ToolError, match="Unknown action"):
+            _call_tool("App", action="unknown")

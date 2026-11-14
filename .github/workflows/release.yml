@@ -1,0 +1,73 @@
+name: Release
+
+# Publishes the Windows agent and the macOS client with their hashes and a provenance attestation when a version tag is
+# pushed. No bundle is published: it carries each user's SSH public key, so users build it with build_bundle.py.
+on:
+  push:
+    tags: ["v*"]
+
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # checks out the code; nothing is written
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: agent/go.mod
+          cache: false
+      - name: Build the binaries
+        run: |
+          set -euo pipefail
+          if ! [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "tag $GITHUB_REF_NAME is not vMAJOR.MINOR.PATCH" >&2; exit 1
+          fi
+          version="${GITHUB_REF_NAME#v}"
+          mkdir dist
+          (cd agent && GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=${version}" \
+            -o ../dist/winbridge-agent-windows-amd64.exe ./cmd/winbridge-agent)
+          (cd cli && GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=${version}" \
+            -o ../dist/winbridge-darwin-arm64 .)
+          (cd cli && GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=${version}" \
+            -o ../dist/winbridge-darwin-amd64 .)
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  publish:
+    name: Publish
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # creates the GitHub release and uploads its files
+      id-token: write # lets the attestation step ask for a signing identity
+      attestations: write # stores the provenance attestation
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: dist
+          path: dist
+      - name: Write SHA256SUMS
+        working-directory: dist
+        run: sha256sum winbridge-agent-windows-amd64.exe winbridge-darwin-arm64 winbridge-darwin-amd64 > SHA256SUMS
+      - uses: actions/attest-build-provenance@96278af6caaf10aea03fd8d33a09a777ca52d62f # v3.2.0
+        with:
+          subject-path: dist/*
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/* -R "$GITHUB_REPOSITORY" \
+            --title "WinBridge ${GITHUB_REF_NAME#v}" --notes "See CHANGELOG.md. Verify with: shasum -a 256 -c SHA256SUMS, and gh attestation verify <file> -R $GITHUB_REPOSITORY"

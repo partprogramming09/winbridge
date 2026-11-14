@@ -1,0 +1,7 @@
+# Working material that stays out of `git archive` (and so out of the public repository).
+CLAUDE.md export-ignore
+docs/estado.md export-ignore
+docs/plans export-ignore
+docs/research export-ignore
+docs/diagrams/plan-publicar.html export-ignore
+docs/diagrams/plan-publicar.png export-ignore

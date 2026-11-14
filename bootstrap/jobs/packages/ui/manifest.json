@@ -1,0 +1,16 @@
+{
+  "jobs": {
+    "ui": {
+      "script": "ui.ps1",
+      "timeout_s": 40,
+      "session": 1,
+      "description": "Read (Action=list, optional Filter) or press (Action=click, Name) UI elements by name inside an application started with app-run",
+      "params": {
+        "App": "^[A-Za-z0-9_-]{1,40}$",
+        "Action": "^(list|click)$",
+        "Name": "^[\\p{L}\\p{N} _.,:&()'-]{1,80}$",
+        "Filter": "^[\\p{L}\\p{N} _.,:&()'-]{0,80}$"
+      }
+    }
+  }
+}

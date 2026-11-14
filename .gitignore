@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+build/
+dist/
+site/
+coverage.xml
+.coverage
+
+# WinBridge build and bundle artifacts
+build/wheelhouse/
+build/bundle/
+wheels/
+*.whl
+*.tar.gz
+*.zip
+SHA256SUMS
+bootstrap/authorized_keys
+
+# Secrets and generated state (never commit)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
+*.log
+logs/
+state/
+*.kdbx
+
+# OS and editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+dist-go/
+
+# Configuración local de asistentes de IA (no se versiona)
+.claude/
