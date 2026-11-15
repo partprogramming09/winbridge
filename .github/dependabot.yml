@@ -19,6 +19,10 @@ updates:
       python-dependencies:
         patterns:
           - "*"
+    ignore:
+      # fastmcp 4 is a major jump the tests pin below on purpose (tests/test_bootstrap_contract.py); move it by hand.
+      - dependency-name: "fastmcp"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "gomod"
     directory: "/agent"
