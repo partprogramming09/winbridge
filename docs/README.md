@@ -14,6 +14,7 @@ WinBridge:
 - [GATEWAY.md](GATEWAY.md): ¿Cómo llama el agente a herramientas de otros servidores MCP locales y qué protege y qué no?
 - [JOBS.md](JOBS.md): ¿Cómo se lanzan, vigilan y cancelan desde la Mac trabajos elevados en el escritorio del laptop?
 - [adr/0001-perfil-estricto-solo-tailscale.md](adr/0001-perfil-estricto-solo-tailscale.md): ¿Por qué solo nueve herramientas y solo por Tailscale?
+- [adr/0002-repositorio-publico-de-un-commit.md](adr/0002-repositorio-publico-de-un-commit.md): ¿Por qué el repositorio público tiene un solo commit y qué protege que no se filtren datos personales?
 
 Heredados de upstream (`winremote-mcp 0.4.24`; describen el servidor Python original y no están verificados para el perfil estricto):
 

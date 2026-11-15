@@ -428,6 +428,11 @@ def test_jobs_installer_pins_the_runner_hash():
     assert "$RunnerSha256" in installer
     assert "runner hash mismatch" in installer
     assert "ReadAllBytes" in installer and "WriteAllBytes" in installer
+    # The bytes that were hashed are the bytes that get written: no second read of runner.ps1 after the check.
+    assert "[IO.File]::WriteAllBytes((Join-Path $Root 'runner.ps1'), $runnerBytes)" in installer
+    assert installer.count("ReadAllBytes") == 1
+    assert not re.search(r"Copy-Item[^\n]*runner\.ps1", installer)
+    assert "[ValidatePattern('^[A-Fa-f0-9]{64}$')][string]$RunnerSha256" in installer
     update = _read(BOOTSTRAP / "scripts" / "Update-WinBridgeGo.ps1")
     assert "runner_sha256" in update
 

@@ -8,11 +8,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/partprogramming09/winbridge/agent/internal/tools"
 )
 
 // toolSpec is the contract of one tool: its parameter names and the ones without a default.
@@ -107,7 +109,8 @@ func checkTools(ctx context.Context, baseURL, key string) []string {
 			return append(fails, "MCP list tools: "+err.Error())
 		}
 		seen[tool.Name] = true
-		if tool.Name == "ListServers" || tool.Name == "ServerTools" || tool.Name == "CallServerTool" {
+		// Optional built-ins that exist only when the owner configures [servers] or [jobs].
+		if slices.Contains(tools.GatewayToolNames, tool.Name) || slices.Contains(tools.JobToolNames, tool.Name) {
 			continue
 		}
 		if tool.Name == goOnlyTool {

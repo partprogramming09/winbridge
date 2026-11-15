@@ -5,11 +5,14 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/partprogramming09/winbridge/agent/internal/desktop"
 	"github.com/partprogramming09/winbridge/agent/internal/diag"
+	"github.com/partprogramming09/winbridge/agent/internal/jobs"
 	"github.com/partprogramming09/winbridge/agent/internal/parity"
 	"github.com/partprogramming09/winbridge/agent/internal/procs"
 	"github.com/partprogramming09/winbridge/agent/internal/profile"
@@ -65,6 +68,33 @@ func TestGoAgentWithProcessesStillConforms(t *testing.T) {
 		Version: "0.0.0-test", Upstream: "native-go", Key: key, Allowlist: []*net.IPNet{loopback},
 		Desktop: fake, Tools: profile.Tools, Strict: true,
 		Procs: func() ([]procs.Process, error) { return list, nil },
+	}))
+	defer srv.Close()
+	if fails := parity.Run(context.Background(), srv.URL, key); len(fails) != 0 {
+		t.Fatalf("deviations from the contract:\n%s", strings.Join(fails, "\n"))
+	}
+}
+
+// TestGoAgentWithJobsStillConforms enables the job tools, which exist only when the owner configures [jobs].
+func TestGoAgentWithJobsStillConforms(t *testing.T) {
+	root := t.TempDir()
+	for _, sub := range []string{"inbox", "out", "cancel"} {
+		if err := os.MkdirAll(filepath.Join(root, sub), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	manifest := `{"jobs":{"state":{"script":"s.ps1","sha256":"aa","timeout_s":30}}}`
+	if err := os.WriteFile(filepath.Join(root, "manifest.json"), []byte(manifest), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	store, err := jobs.New(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, loopback, _ := net.ParseCIDR("127.0.0.0/8")
+	srv := httptest.NewServer(server.New(server.Options{
+		Version: "0.0.0-test", Upstream: "native-go", Key: key, Allowlist: []*net.IPNet{loopback},
+		Desktop: &desktop.Fake{}, Tools: profile.Tools, Jobs: store, Strict: true,
 	}))
 	defer srv.Close()
 	if fails := parity.Run(context.Background(), srv.URL, key); len(fails) != 0 {

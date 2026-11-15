@@ -316,6 +316,19 @@ reinstalls the previous archived wheel, restarts the supervisor, and reports
 `rolled_back`. The bundle itself is still the recommended update vehicle,
 because it carries the matching dependency lock and wheelhouse.
 
+## Publish a version
+
+Set the date of the new version in `CHANGELOG.md` first, then tag `main` once its CI is green:
+
+```sh
+git tag vMAJOR.MINOR.PATCH && git push origin vMAJOR.MINOR.PATCH
+```
+
+The tag triggers `.github/workflows/release.yml`, which builds and publishes `winbridge-agent-windows-amd64.exe`,
+`winbridge-darwin-arm64`, `winbridge-darwin-amd64` and `SHA256SUMS`, with a provenance attestation. The workflow rejects
+a tag that is not `vMAJOR.MINOR.PATCH`. To check a release, see [Get the binaries](#get-the-binaries). Why the public
+repository has a single commit: [ADR 0002](../adr/0002-repositorio-publico-de-un-commit.md).
+
 ## Removal and revocation
 
 - To revoke the Mac: remove its key from the Windows `authorized_keys`, remove
