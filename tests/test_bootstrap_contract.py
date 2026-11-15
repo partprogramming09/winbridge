@@ -232,7 +232,6 @@ def test_doctor_does_not_fail_what_an_ssh_session_cannot_see():
     assert doctor.count("elseif ($credentialUnreadable)") == 2
 
 
-
 def test_doctor_skips_what_an_ssh_session_cannot_see_instead_of_warning():
     doctor = _read(BOOTSTRAP / "lib" / "Doctor.ps1")
     assert "if ($env:SSH_CONNECTION) { 'SKIP' } else { 'FAIL' }" in doctor
@@ -255,7 +254,7 @@ def test_doctor_does_not_warn_about_the_session_lock_from_inside_ssh():
 
 def test_doctor_forces_utf8_output_before_any_output():
     common = _read(BOOTSTRAP / "lib" / "Common.ps1")
-    helper = common[common.index("function Set-WinBridgeUtf8Output"):]
+    helper = common[common.index("function Set-WinBridgeUtf8Output") :]
     assert "UTF8Encoding($false)" in helper.split("\nfunction ")[0]
     script = _read(BOOTSTRAP / "scripts" / "Test-WinBridgeInstall.ps1")
     assert script.index("Set-WinBridgeUtf8Output") < script.index("Invoke-WinBridgeDoctor")
@@ -271,7 +270,7 @@ def test_doctor_reviews_sshd_read_only():
     # Both run only when SSH is not skipped, and the review never changes the service.
     assert doctor.index("New-WinBridgeSshdSettingsCheck") > doctor.index("if (-not $SkipSsh)")
     for name in ("Get-WinBridgeSshdFailureCounts", "Measure-WinBridgeSshdFailures", "New-WinBridgeSshdFailuresCheck"):
-        body = ssh[ssh.index("function " + name):].split("\nfunction ")[0]
+        body = ssh[ssh.index("function " + name) :].split("\nfunction ")[0]
         assert not re.search(r"Restart-Service|Stop-Service|Set-Service|New-NetFirewallRule", body), name
     assert "-cmatch" in ssh  # 'Invalid user' differs from 'invalid user' only by case
 

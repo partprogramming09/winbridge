@@ -32,7 +32,7 @@ import sys
 import tempfile
 import uuid
 import zipfile
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import tomllib
@@ -136,9 +136,12 @@ def git_state() -> tuple[str | None, bool]:
 
 def verify_git_base(base_commit: str) -> None:
     # A repository that starts after the fork point (the published one-commit repository) does not hold the upstream
-    # commit at all: say so and go on. The ancestry check only matters where the commit exists (the upstream-merge flow).
+    # commit at all: say so and go on. The ancestry check only matters where the commit exists
+    # (the upstream-merge flow).
     if run(["git", "rev-parse", "--is-shallow-repository"]).strip() == "true":
-        raise BuildError("this is a shallow clone: fetch the full history before building, the upstream base cannot be checked")
+        raise BuildError(
+            "this is a shallow clone: fetch the full history before building, the upstream base cannot be checked"
+        )
     try:
         run(["git", "cat-file", "-e", f"{base_commit}^{{commit}}"])
     except BuildError:
@@ -595,7 +598,7 @@ def assemble(args: argparse.Namespace) -> Path:
         "upstream_base": upstream_base,
         "upstream_commit": upstream["base_commit"],
         "platform": "windows-x86_64",
-        "created_at": datetime.now(UTC).replace(microsecond=0).isoformat(),
+        "created_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
         "build_id": uuid.uuid4().hex,
         "git_commit": commit,
         "git_dirty": dirty,

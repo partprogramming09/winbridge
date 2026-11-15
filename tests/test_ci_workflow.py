@@ -1,4 +1,5 @@
-"""Checks on the GitHub Actions workflows and Dependabot: Go is pinned, formatting is enforced, releases are least-privilege.
+"""Checks on the GitHub Actions workflows and Dependabot: Go is pinned, formatting is enforced,
+releases are least-privilege.
 
 Text checks on purpose: the CI installs only the test extras, so no YAML parser is assumed.
 """
@@ -38,7 +39,9 @@ def test_ci_pins_go_checks_format_and_builds_the_cli_for_darwin():
 def test_dependabot_covers_go_modules():
     text = _read(REPO_ROOT / ".github" / "dependabot.yml")
     for directory in ("/agent", "/cli"):
-        assert re.search(rf'package-ecosystem: "gomod"\n\s+directory: "{directory}"\n\s+schedule:\n\s+interval: weekly', text), directory
+        assert re.search(
+            rf'package-ecosystem: "gomod"\n\s+directory: "{directory}"\n\s+schedule:\n\s+interval: weekly', text
+        ), directory
 
 
 def test_release_workflow_is_least_privilege_and_pinned():

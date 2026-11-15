@@ -11,6 +11,7 @@ import (
 	"github.com/partprogramming09/winbridge/agent/internal/desktop"
 	"github.com/partprogramming09/winbridge/agent/internal/diag"
 	"github.com/partprogramming09/winbridge/agent/internal/parity"
+	"github.com/partprogramming09/winbridge/agent/internal/procs"
 	"github.com/partprogramming09/winbridge/agent/internal/profile"
 	"github.com/partprogramming09/winbridge/agent/internal/server"
 )
@@ -52,5 +53,21 @@ func TestRunReportsDeviations(t *testing.T) {
 	defer srv.Close()
 	if fails := parity.Run(context.Background(), srv.URL, key); len(fails) < 3 {
 		t.Fatalf("want several deviations from a foreign server, got %v", fails)
+	}
+}
+
+// TestGoAgentWithProcessesStillConforms adds the read-only Processes tool, which the real agent always exposes.
+func TestGoAgentWithProcessesStillConforms(t *testing.T) {
+	_, loopback, _ := net.ParseCIDR("127.0.0.0/8")
+	fake := &desktop.Fake{}
+	list := []procs.Process{{PID: 4, Name: "System"}}
+	srv := httptest.NewServer(server.New(server.Options{
+		Version: "0.0.0-test", Upstream: "native-go", Key: key, Allowlist: []*net.IPNet{loopback},
+		Desktop: fake, Tools: profile.Tools, Strict: true,
+		Procs: func() ([]procs.Process, error) { return list, nil },
+	}))
+	defer srv.Close()
+	if fails := parity.Run(context.Background(), srv.URL, key); len(fails) != 0 {
+		t.Fatalf("deviations from the contract:\n%s", strings.Join(fails, "\n"))
 	}
 }

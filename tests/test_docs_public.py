@@ -1,4 +1,4 @@
-"""Checks on the documents a stranger reads first: security policy, README, community files and leftovers from upstream."""
+"""Checks on the documents a stranger reads first: security policy, README, community files, upstream leftovers."""
 
 from __future__ import annotations
 
@@ -38,8 +38,13 @@ def test_readme_has_both_languages_and_no_upstream_install():
 
 
 def test_community_files_exist_and_issue_form_blocks_security_reports():
-    for name in ("CODE_OF_CONDUCT.md", "CONTRIBUTING.md", ".github/PULL_REQUEST_TEMPLATE.md",
-                 ".github/ISSUE_TEMPLATE/bug_report.yml", ".github/ISSUE_TEMPLATE/config.yml"):
+    for name in (
+        "CODE_OF_CONDUCT.md",
+        "CONTRIBUTING.md",
+        ".github/PULL_REQUEST_TEMPLATE.md",
+        ".github/ISSUE_TEMPLATE/bug_report.yml",
+        ".github/ISSUE_TEMPLATE/config.yml",
+    ):
         assert (REPO_ROOT / name).is_file(), name
     config = _read(REPO_ROOT / ".github" / "ISSUE_TEMPLATE" / "config.yml")
     assert "blank_issues_enabled: false" in config and "Report a vulnerability" in config
@@ -63,7 +68,9 @@ def test_no_upstream_leftovers_and_changelog_has_a_winbridge_entry():
 
 
 def _tracked_markdown() -> list[Path]:
-    out = subprocess.run(["git", "ls-files", "-z", "*.md"], cwd=REPO_ROOT, check=True, capture_output=True, text=True).stdout
+    out = subprocess.run(
+        ["git", "ls-files", "-z", "*.md"], cwd=REPO_ROOT, check=True, capture_output=True, text=True
+    ).stdout
     return [REPO_ROOT / n for n in out.split("\0") if n and not n.startswith("docs/plans/")]
 
 
@@ -93,12 +100,25 @@ def test_operating_guide_matches_the_code():
     assert "claude/mac" not in guide and "(private)" not in guide and "private fork" not in guide
 
 
-WORKING_MATERIAL = ("CLAUDE.md", "docs/estado.md", "docs/plans", "docs/research", "docs/diagrams/plan-publicar.html", "docs/diagrams/plan-publicar.png")
+WORKING_MATERIAL = (
+    "CLAUDE.md",
+    "docs/estado.md",
+    "docs/plans",
+    "docs/research",
+    "docs/diagrams/plan-publicar.html",
+    "docs/diagrams/plan-publicar.png",
+)
 
 
 def test_gitattributes_excludes_working_material():
     for path in WORKING_MATERIAL:
-        out = subprocess.run(["git", "check-attr", "export-ignore", "--", path], cwd=REPO_ROOT, check=True, capture_output=True, text=True).stdout
+        out = subprocess.run(
+            ["git", "check-attr", "export-ignore", "--", path],
+            cwd=REPO_ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout
         assert out.strip().endswith("export-ignore: set"), f"{path} is not export-ignore: {out.strip()}"
 
 

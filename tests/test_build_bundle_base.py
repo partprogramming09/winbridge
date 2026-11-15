@@ -1,4 +1,4 @@
-"""verify_git_base must not block a repository whose history does not hold the upstream base commit (the public one-commit repo)."""
+"""verify_git_base must not block a repository without the upstream base commit (the public one-commit repo)."""
 
 from __future__ import annotations
 
@@ -9,6 +9,9 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+
+# The bundle builder is a build tool that needs Python 3.11+ (tomllib).
+pytest.importorskip("tomllib")
 
 
 def _load():

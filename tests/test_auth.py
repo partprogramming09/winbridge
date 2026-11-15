@@ -155,7 +155,14 @@ class TestAdversarialHeaderShapes:
 
     def test_raw_non_ascii_and_control_bytes_never_crash_or_pass(self):
         app = _make_app(self.KEY)
-        for value in (b"Bearer \xff\xfe", b"Bearer \x80", b"\xc3\xa9", b"Bearer s\xc3\xa9cret123", b"\x00", b"Bearer " + bytes(range(256))):
+        for value in (
+            b"Bearer \xff\xfe",
+            b"Bearer \x80",
+            b"\xc3\xa9",
+            b"Bearer s\xc3\xa9cret123",
+            b"\x00",
+            b"Bearer " + bytes(range(256)),
+        ):
             assert _asgi_status(app, [(b"authorization", value)]) == 401, value
 
     def test_missing_header_and_empty_header(self):
@@ -171,7 +178,14 @@ class TestAdversarialHeaderShapes:
 
     def test_key_is_not_accepted_as_prefix_or_substring(self):
         client = TestClient(_make_app(self.KEY))
-        for header in ("Bearer secret123secret123", "Bearer secret", "Bearer Bearer secret123", "secret123", "Basic secret123", "Token secret123"):
+        for header in (
+            "Bearer secret123secret123",
+            "Bearer secret",
+            "Bearer Bearer secret123",
+            "secret123",
+            "Basic secret123",
+            "Token secret123",
+        ):
             assert client.get("/", headers={"Authorization": header}).status_code == 401, header
 
     def test_huge_token_is_rejected(self):
@@ -221,7 +235,9 @@ class TestAdversarialKeys:
     def test_non_ascii_key_rejects_lookalike_bytes(self):
         app = _make_app("sécret")
         for value in (b"Bearer secret", "Bearer sécret".encode("utf-8") + b"x", b"Bearer s\xc3\xa9cre"):
-            assert _asgi_status(app, [(b"authorization", value)]) != 200 or value == "Bearer sécret".encode("utf-8"), value
+            assert _asgi_status(app, [(b"authorization", value)]) != 200 or value == "Bearer sécret".encode("utf-8"), (
+                value
+            )
 
 
 class TestAdversarialOAuthFallback:

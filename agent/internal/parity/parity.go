@@ -114,6 +114,10 @@ func checkTools(ctx context.Context, baseURL, key string) []string {
 			fails = append(fails, checkDiagnose(ctx, session)...)
 			continue
 		}
+		if tool.Name == processesTool {
+			fails = append(fails, checkProcesses(ctx, session)...)
+			continue
+		}
 		spec, ok := contract[tool.Name]
 		if !ok {
 			fails = append(fails, "MCP: tool outside the contract: "+tool.Name)
@@ -220,6 +224,21 @@ func contains(list []string, s string) bool {
 
 // goOnlyTool is the one tool the Go agent adds to the nine of the contract; the Python agent does not have it.
 const goOnlyTool = "Diagnose"
+
+// processesTool is the read-only built-in the Go agent always exposes next to Diagnose.
+const processesTool = "Processes"
+
+// checkProcesses calls Processes with a small limit and checks that it answers without an error.
+func checkProcesses(ctx context.Context, session *mcp.ClientSession) []string {
+	res, err := session.CallTool(ctx, &mcp.CallToolParams{Name: processesTool, Arguments: map[string]any{"limit": 1}})
+	if err != nil {
+		return []string{"Processes call: " + err.Error()}
+	}
+	if res.IsError {
+		return []string{"Processes returned an error"}
+	}
+	return nil
+}
 
 // checkDiagnose calls Diagnose and checks that the structured report has the fields clients rely on.
 func checkDiagnose(ctx context.Context, session *mcp.ClientSession) []string {

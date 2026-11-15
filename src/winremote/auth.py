@@ -43,7 +43,8 @@ class AuthKeyMiddleware(BaseHTTPMiddleware):
         auth_header = request.headers.get("Authorization", "")
 
         # Check API key first
-        # Constant-time compare on bytes: == leaks the matching prefix and length through timing. An empty key matches nothing.
+        # Constant-time compare on bytes: == leaks the matching prefix and length through timing.
+        # An empty key matches nothing.
         if self.auth_key and hmac.compare_digest(
             auth_header.encode("utf-8", "surrogateescape"), f"Bearer {self.auth_key}".encode("utf-8", "surrogateescape")
         ):
