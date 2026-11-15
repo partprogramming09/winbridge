@@ -27,6 +27,7 @@ type Options struct {
 	Tasks     tools.TaskRunner                  // nil keeps the nine-tool profile
 	Gateway   tools.GatewayRunner               // nil leaves the gateway tools out
 	Jobs      tools.JobsRunner                  // nil leaves the job tools out
+	Files     tools.FilesRunner                 // nil leaves the file tools out
 	Procs     procs.Lister                      // nil leaves the Processes tool out
 	Diag      func(logLines int) map[string]any // nil leaves the Diagnose tool out
 	Strict    bool
@@ -49,6 +50,7 @@ func New(o Options) http.Handler {
 	env.Tasks = o.Tasks
 	env.Gateway = o.Gateway
 	env.Jobs = o.Jobs
+	env.Files = o.Files
 	env.Procs = o.Procs
 	env.Diag = o.Diag
 	tools.Register(mcpServer, env, o.Tools)
@@ -72,6 +74,9 @@ func New(o Options) http.Handler {
 		}
 		if o.Jobs != nil {
 			builtin = append(builtin, tools.JobToolNames...)
+		}
+		if o.Files != nil {
+			builtin = append(builtin, tools.FileToolNames...)
 		}
 		if o.Procs != nil {
 			builtin = append(builtin, "Processes")

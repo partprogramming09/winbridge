@@ -15,6 +15,7 @@ WinBridge:
 - [JOBS.md](JOBS.md): ¿Cómo se lanzan, vigilan y cancelan desde la Mac trabajos elevados en el escritorio del laptop?
 - [adr/0001-perfil-estricto-solo-tailscale.md](adr/0001-perfil-estricto-solo-tailscale.md): ¿Por qué solo nueve herramientas y solo por Tailscale?
 - [adr/0002-repositorio-publico-de-un-commit.md](adr/0002-repositorio-publico-de-un-commit.md): ¿Por qué el repositorio público tiene un solo commit y qué protege que no se filtren datos personales?
+- [adr/0003-herramientas-de-archivos-opt-in.md](adr/0003-herramientas-de-archivos-opt-in.md): ¿Por qué hay herramientas de archivos opcionales y cómo se acotan por carpetas?
 
 Heredados de upstream (`winremote-mcp 0.4.24`; describen el servidor Python original y no están verificados para el perfil estricto):
 

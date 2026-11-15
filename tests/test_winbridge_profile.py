@@ -86,3 +86,18 @@ def test_valid_profile_passes():
 def test_profile_refuses_unsafe_variants(overrides):
     with pytest.raises(ValueError):
         validate_winbridge_profile(**_valid_kwargs(**overrides))
+
+
+def test_python_fallback_ignores_the_files_table(tmp_path):
+    """The Python fallback has no file tools, but a local.toml with [files] must not break it."""
+    from winremote.config import load_config
+
+    path = tmp_path / "winbridge.toml"
+    path.write_text(
+        '[server]\nhost = "100.64.1.2"\nport = 8090\n[tools]\nenable = ["Snapshot"]\n'
+        "[files]\nread_roots = ['C:\\Users\\alice\\Shared']\nmax_bytes = 1024\n",
+        encoding="utf-8",
+    )
+    cfg = load_config(path)
+    assert cfg.server.port == 8090
+    assert cfg.tools.enable == ["Snapshot"]

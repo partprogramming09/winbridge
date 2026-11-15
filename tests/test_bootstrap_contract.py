@@ -463,3 +463,24 @@ def test_default_port_is_8091_everywhere():
     }
     found = {name: (m.group(1) if m else None) for name, m in ports.items()}
     assert set(found.values()) == {"8091"}, found
+
+
+def test_local_toml_accepts_the_files_table():
+    config = _read(BOOTSTRAP / "lib" / "WinBridgeConfig.ps1")
+    guard = config[config.index("function Assert-WinBridgeLocalConfig") :]
+    assert "|jobs|files)" in guard.replace(" ", "") or "jobs|files" in guard
+    assert "[files]" in guard
+
+
+def test_files_setter_validates_roots_and_checks_with_the_agent():
+    setter = _read(BOOTSTRAP / "scripts" / "Set-WinBridgeFiles.ps1")
+    assert "[files]" in setter and "read_roots" in setter
+    assert "--print-config" in setter, "the agent must validate the table before the restart"
+    assert "Invoke-WinBridgeNative" in setter, "stderr of the agent check must not skip the rollback on PowerShell 5.1"
+    assert "Get-Content -LiteralPath $localPath -Encoding UTF8" in setter, (
+        "5.1 reads ANSI by default and would corrupt accents"
+    )
+    assert "IsPathRooted" in setter, "relative folders must be refused"
+    assert "Assert-WinBridgeLocalConfig" in setter
+    assert "Set-WinBridgeConsoleQuiet" in setter
+    assert all(ord(c) < 128 for c in setter), "PowerShell 5.1 reads a file without BOM badly: keep it ASCII"

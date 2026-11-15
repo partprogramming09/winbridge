@@ -41,6 +41,7 @@ type Env struct {
 	Tasks   TaskRunner
 	Gateway GatewayRunner                     // nil leaves the gateway tools out
 	Jobs    JobsRunner                        // nil leaves the job tools out
+	Files   FilesRunner                       // nil leaves the file tools out
 	Procs   procs.Lister                      // nil leaves the Processes tool out
 	Diag    func(logLines int) map[string]any // nil leaves the Diagnose tool out
 	Sleep   func(context.Context, time.Duration) error
@@ -128,6 +129,9 @@ func Register(s *mcp.Server, e *Env, enabled []string) {
 	}
 	if e.Jobs != nil {
 		registerJobs(s, e)
+	}
+	if e.Files != nil {
+		registerFiles(s, e)
 	}
 	if e.Procs != nil {
 		registerProcesses(s, e)

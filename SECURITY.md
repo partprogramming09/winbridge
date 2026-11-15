@@ -45,7 +45,7 @@ What it does:
   file, and the agent receives it through its environment. On the Mac it appears briefly in the arguments of
   `security add-generic-password` when it goes into the Keychain.
 - The strict profile exposes exactly nine tools: `Snapshot`, `Click`, `Type`, `Move`, `Scroll`, `Shortcut`, `FocusWindow`,
-  `Wait` and `GetSystemInfo`; none of them runs a command or reads a file. Through `Type` and `Shortcut`, a key holder can
+  `Wait` and `GetSystemInfo`; none of the nine runs a command or reads a file (the opt-in file tools below are separate). Through `Type` and `Shortcut`, a key holder can
   still start any program on the unlocked desktop.
 - Traffic is plain HTTP inside the Tailscale tunnel, which Tailscale encrypts. There is no TLS of its own.
 
@@ -71,6 +71,12 @@ own code review and were not shown to be exploitable.
   (`CallServerTool` and others) and `RunTask`. `/status` lists the first two groups in `builtin_tools`, outside `tools_count`. `RunTask` appears in `tools` and is
   counted, so `winbridge adopt` reports a tool-count mismatch while `[tasks]` is defined. They exist only if the owner
   configures them.
+- **Opt-in file tools (`ListFiles`, `ReadFile`).** They exist only with a `[files]` table in `local.toml`. A key holder reads
+  every file inside the folders the owner named and nothing outside them; the agent refuses to start with a folder that is a
+  drive root, the user profile, WinBridge's folders, `.ssh`, `AppData`, the Start menu, Windows, Program Files or a `PATH`
+  folder. The folders limit a deceived agent, not an attacker who already controls the Windows account, which can read the
+  same files. Choose folders that hold only what you are willing to share. They are built-in tools and do not count in
+  `tools_count`. The Python fallback does not have them. See [ADR 0003](docs/adr/0003-herramientas-de-archivos-opt-in.md).
 - **`sshd` listens on `0.0.0.0:22` and `:::22`.** Only the Windows Firewall rules, which allow the Tailscale ranges, limit who
   can reach it. A `ListenAddress` restriction was postponed because a mistake would cut your only way in. `winbridge doctor`
   checks the firewall rules and flags a rule that opens port 22 or the MCP port to `Any`, `LocalSubnet` and similar broad

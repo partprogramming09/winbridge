@@ -109,8 +109,8 @@ func checkTools(ctx context.Context, baseURL, key string) []string {
 			return append(fails, "MCP list tools: "+err.Error())
 		}
 		seen[tool.Name] = true
-		// Optional built-ins that exist only when the owner configures [servers] or [jobs].
-		if slices.Contains(tools.GatewayToolNames, tool.Name) || slices.Contains(tools.JobToolNames, tool.Name) {
+		// Optional built-ins that exist only when the owner configures [servers], [jobs] or [files].
+		if slices.Contains(tools.GatewayToolNames, tool.Name) || slices.Contains(tools.JobToolNames, tool.Name) || slices.Contains(tools.FileToolNames, tool.Name) {
 			continue
 		}
 		if tool.Name == goOnlyTool {

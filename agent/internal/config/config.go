@@ -56,6 +56,12 @@ type Jobs struct {
 	Root string `toml:"root"`
 }
 
+// Files is the [files] table: the folders the file tools may reach. Without it the tools do not exist.
+type Files struct {
+	ReadRoots []string `toml:"read_roots"`
+	MaxBytes  int64    `toml:"max_bytes"`
+}
+
 // Config is the whole file.
 type Config struct {
 	Server   Server               `toml:"server"`
@@ -64,6 +70,7 @@ type Config struct {
 	Tasks    map[string]Task      `toml:"tasks"`
 	Servers  map[string]MCPServer `toml:"servers"`
 	Jobs     Jobs                 `toml:"jobs"`
+	Files    Files                `toml:"files"`
 }
 
 // Load reads and validates the file at path; unknown keys are an error so a typo cannot widen the profile silently.

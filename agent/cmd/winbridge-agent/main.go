@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime"
 	"runtime/debug"
 	"strconv"
 	"syscall"
@@ -21,6 +22,7 @@ import (
 	"github.com/partprogramming09/winbridge/agent/internal/config"
 	"github.com/partprogramming09/winbridge/agent/internal/desktop"
 	"github.com/partprogramming09/winbridge/agent/internal/diag"
+	"github.com/partprogramming09/winbridge/agent/internal/files"
 	"github.com/partprogramming09/winbridge/agent/internal/gateway"
 	"github.com/partprogramming09/winbridge/agent/internal/jobs"
 	"github.com/partprogramming09/winbridge/agent/internal/procs"
@@ -75,6 +77,9 @@ func run(args []string, getenv func(string) string) error {
 			return err
 		}
 		if _, err := buildJobs(cfg); err != nil {
+			return err
+		}
+		if _, err := buildFiles(cfg, getenv); err != nil {
 			return err
 		}
 		return json.NewEncoder(os.Stdout).Encode(map[string]any{
@@ -132,6 +137,10 @@ func run(args []string, getenv func(string) string) error {
 	if err != nil {
 		return err
 	}
+	fileStore, err := buildFiles(cfg, getenv)
+	if err != nil {
+		return err
+	}
 	opts := server.Options{
 		Version: version, Upstream: upstream, Key: key, Allowlist: allow, Desktop: dsk, Tools: tools, Strict: strict,
 	}
@@ -143,6 +152,9 @@ func run(args []string, getenv func(string) string) error {
 	}
 	if jobStore != nil {
 		opts.Jobs = jobStore
+	}
+	if fileStore != nil {
+		opts.Files = fileStore
 	}
 	opts.Procs = procs.List
 	root := ""
@@ -184,6 +196,32 @@ func buildJobs(cfg config.Config) (*jobs.Store, error) {
 		return nil, fmt.Errorf("jobs.root must be an absolute path, got %q", cfg.Jobs.Root)
 	}
 	return jobs.New(cfg.Jobs.Root)
+}
+
+// buildFiles returns the file store for the [files] table, or nil when it has no read_roots. Folders that hold
+// WinBridge itself, the jobs, the task scripts, keys, startup programs or programs on the PATH are refused at start.
+func buildFiles(cfg config.Config, getenv func(string) string) (*files.Store, error) {
+	if len(cfg.Files.ReadRoots) == 0 {
+		return nil, nil
+	}
+	if err := files.CheckEnvironment(getenv, runtime.GOOS == "windows"); err != nil {
+		return nil, err
+	}
+	forbidden := files.DangerousPaths(getenv)
+	if local := getenv("LOCALAPPDATA"); local != "" {
+		forbidden = append(forbidden, filepath.Join(local, "winbridge"))
+	}
+	if cfg.Jobs.Root != "" {
+		forbidden = append(forbidden, cfg.Jobs.Root)
+	}
+	for _, t := range cfg.Tasks {
+		if t.Script != "" {
+			forbidden = append(forbidden, filepath.Dir(t.Script))
+		}
+	}
+	return files.New(files.Config{
+		ReadRoots: cfg.Files.ReadRoots, MaxBytes: cfg.Files.MaxBytes, Home: getenv("USERPROFILE"), Forbidden: forbidden,
+	})
 }
 
 // buildGateway returns the gateway for the [servers.*] tables, or nil when there are none.

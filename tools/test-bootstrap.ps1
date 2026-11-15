@@ -415,6 +415,27 @@ try {
         Assert-Equal -Expected 9 -Actual $toolNames.Count -Name 'rendered tool count'
     }
 
+    Test-Case 'local.toml guard accepts the files table and refuses any other table' {
+        Assert-WinBridgeLocalConfig -Text ("[files]`r`nread_roots = ['C:\\Users\\alice\\Shared']`r`n")
+        Assert-WinBridgeLocalConfig -Text ("[jobs]`r`nroot = 'C:\\ProgramData\\WinBridgeJobs'`r`n[files]`r`nread_roots = ['D:\\data']`r`n")
+        foreach ($bad in @('[security]', '[server]', '[tools]', '[files.extra]', '[filesystem]')) {
+            Assert-Throws -Body { Assert-WinBridgeLocalConfig -Text ($bad + "`r`nx = 1`r`n") } -Name ('guard must refuse ' + $bad)
+        }
+    }
+
+    Test-Case 'a native command that writes to stderr is captured, not thrown, under ErrorActionPreference Stop' {
+        $self = (Get-Process -Id $PID).Path
+        $previous = $ErrorActionPreference
+        $ErrorActionPreference = 'Stop'
+        try {
+            $r = Invoke-WinBridgeNative -FilePath $self -Arguments @('-NoProfile', '-Command', '[Console]::Error.WriteLine("agent-says-no"); exit 3')
+        } finally {
+            $ErrorActionPreference = $previous
+        }
+        Assert-Equal -Expected 3 -Actual $r.ExitCode -Name 'exit code survives'
+        Assert-True -Condition ($r.Output -match 'agent-says-no') -Name 'stderr text is returned'
+    }
+
     Test-Case 'config rendering refuses a non-Tailscale host' {
         $state = Get-WinBridgeDefaultState
         Set-WinBridgeProperty -Object $state -Name 'tailscale_ip' -Value '192.168.1.5'

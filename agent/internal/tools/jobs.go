@@ -55,19 +55,6 @@ func registerJobs(s *mcp.Server, e *Env) {
 		}
 		return object([]string{"id"}, props)
 	}
-	only := func(a Args, allowed ...string) error {
-	next:
-		for key := range a {
-			for _, k := range allowed {
-				if key == k {
-					continue next
-				}
-			}
-			return errors.New("unexpected parameter " + key)
-		}
-		return nil
-	}
-
 	add("ListJobs", "List jobs",
 		"List the jobs the runner allows, with each parameter's regex, the time limit in seconds and the session (1 desktop, 0 service), the jobs now queued or running, and the applications the app-run job may start (use SubmitJob job=app-run with App and optional AppArgs).",
 		true, object(nil, map[string]any{}),

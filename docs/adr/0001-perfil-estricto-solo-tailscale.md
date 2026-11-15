@@ -1,7 +1,7 @@
 # 0001. Perfil estricto de nueve herramientas, solo por Tailscale
 
 **Lector:** personas
-**Estado:** Aceptada
+**Estado:** Aceptada (enmendada por el [ADR 0003](0003-herramientas-de-archivos-opt-in.md): herramientas de archivos opcionales)
 **Fecha de registro:** 2026-11-14 (la decisión es anterior; se recoge aquí desde `docs/guides/operar-winbridge.md` y `docs/AGENT-CONTRACT.md`)
 
 ## Contexto

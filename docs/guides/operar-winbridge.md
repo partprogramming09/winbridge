@@ -32,8 +32,8 @@ remote-administration product. This guide is for the person who installs and ope
    directly to Windows Credential Manager.
 5. Management scripts for doctor/status, logs, restart, client allowlist, update
    with rollback, and removal.
-6. A native Go agent, with the built-in read-only tools `Processes` and `Diagnose`, plus optional job and gateway tools that
-   are not counted among the nine profile tools.
+6. A native Go agent, with the built-in read-only tools `Processes` and `Diagnose`, plus optional job, gateway and file tools
+   that are not counted among the nine profile tools.
 7. The `winbridge` client for macOS: `hosts`, `adopt`, `status`, `doctor`, `logs`, `restart`, `update`, `call` and `jobs`.
 
 Some upstream documents remain in `docs/` for reference and say so in their header. This file
@@ -300,6 +300,28 @@ that cap, because a brute-force burst can be huge. One refused attempt can appea
 in both counts, so they are not added. Both are read-only and report `SKIP` with the cause when the settings or
 the log cannot be read (for example, a session without administrator rights).
 The doctor writes UTF-8, so accents in a Spanish host's messages arrive intact.
+
+## Let the agent read files (opt-in)
+
+By default the agent cannot read any file. To let it list and read files inside folders you choose, run on the PC (as the
+owner, no elevation):
+
+```powershell
+.\bootstrap\scripts\Set-WinBridgeFiles.ps1 -ReadRoot C:\Users\alice\Shared
+```
+
+The script writes `[files]` to `config\local.toml`, asks the agent to check it and restarts the agent. If the agent refuses
+a folder (a drive root, your whole user profile, `.ssh`, `AppData`, the Start menu, Windows, Program Files, a `PATH` folder or
+WinBridge's own folders), the previous configuration is put back and the error says which folder overlaps. Check from the Mac:
+
+```
+winbridge call ReadFile -args '{"path":"C:\\Users\\alice\\Shared\\notes.txt"}'
+```
+
+The agent also refuses to start if a listed folder does not exist (an unplugged drive, a renamed folder): fix the folder or run
+`-Remove`. You should see the text; a path outside the folder returns `isError: true`. `winbridge status` still says `9 tools`. To turn
+it off run `Set-WinBridgeFiles.ps1 -Remove`. The Python fallback has no file tools. The folders limit a deceived agent, not
+someone who already controls your Windows account; see [ADR 0003](../adr/0003-herramientas-de-archivos-opt-in.md).
 
 ## Update and rollback
 

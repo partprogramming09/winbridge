@@ -62,7 +62,9 @@ def test_no_upstream_leftovers_and_changelog_has_a_winbridge_entry():
     for name in ("Dockerfile", "glama.json", "mkdocs.yml", "README.zh-CN.md"):
         assert not (REPO_ROOT / name).exists(), name
     changelog = _read(REPO_ROOT / "CHANGELOG.md")
-    first_entry = next(line for line in changelog.splitlines() if line.startswith("## "))
+    first_entry = next(
+        line for line in changelog.splitlines() if line.startswith("## ") and not line.startswith("## [Unreleased]")
+    )
     assert first_entry.startswith("## [0.1.0]"), first_entry
     assert "## Upstream history (winremote-mcp, up to 0.4.24)" in changelog
 
@@ -107,6 +109,8 @@ WORKING_MATERIAL = (
     "docs/research",
     "docs/diagrams/plan-publicar.html",
     "docs/diagrams/plan-publicar.png",
+    "docs/diagrams/herramientas-archivos.html",
+    "docs/diagrams/herramientas-archivos.png",
 )
 
 

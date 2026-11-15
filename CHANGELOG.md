@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Opt-in file tools `ListFiles` and `ReadFile`, only when `local.toml` has a `[files]` table with `read_roots`
+  (`Set-WinBridgeFiles.ps1`). They read inside the named folders and nowhere else: paths are checked as text and then on the
+  opened file (links, junctions, 8.3 names, streams and device names are refused). The agent will not start with a folder
+  that is a drive root, the user profile, WinBridge's own folders, `.ssh`, `AppData`, the Start menu, Windows, Program Files
+  or a `PATH` folder. They are built-in tools: `tools_count` stays 9. See ADR 0003.
+
 ## [0.1.0] - 2026-11-14
 
 First WinBridge release: a fork of winremote-mcp 0.4.24 with a strict profile, reachable only through Tailscale.

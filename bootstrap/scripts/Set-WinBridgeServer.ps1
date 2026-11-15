@@ -63,7 +63,7 @@ try {
     Ensure-WinBridgeDirectory -Path $configDir
 
     $existing = @()
-    if (Test-Path -LiteralPath $localPath) { $existing = @(Get-Content -LiteralPath $localPath) }
+    if (Test-Path -LiteralPath $localPath) { $existing = @(Get-Content -LiteralPath $localPath -Encoding UTF8) }
     $previous = $existing
     $lines = Remove-ServerBlock -Lines $existing -ServerName $Name
 
@@ -118,11 +118,11 @@ try {
 
     $state = Get-WinBridgeState
     $configPath = Write-WinBridgeConfig -State $state
-    $check = & $goExe --config $configPath --print-config 2>&1
-    if ($LASTEXITCODE -ne 0) {
+    $check = Invoke-WinBridgeNative -FilePath $goExe -Arguments @('--config', $configPath, '--print-config')
+    if ($check.ExitCode -ne 0) {
         [IO.File]::WriteAllText($localPath, ((@($previous) -join "`r`n") + "`r`n"), $encoding)
         Write-WinBridgeConfig -State $state | Out-Null
-        throw ('The agent rejected the configuration, so it was put back: ' + (Redact-WinBridgeText (($check | Out-String).Trim())))
+        throw ('The agent rejected the configuration, so it was put back: ' + (Redact-WinBridgeText $check.Output))
     }
     if (-not $NoRestart) {
         & (Join-Path $binRoot 'Restart-WinBridge.ps1') -Json | Out-Null
