@@ -338,7 +338,7 @@ ignored), needs the parent folder to exist and takes at most `max_bytes` (UTF-8 
 read-only folder or a path outside returns `isError: true` and writes nothing. The script writes the whole `[files]` table
 every time, so run it with every folder you want: `-ReadRoot` alone drops the write folders. `winbridge doctor` shows
 `files_write` as a warning while a write folder exists and as a failure if it was deleted. A read folder inside a write folder
-is refused (it would be writable); a write folder inside a read folder is fine. `-Remove` turns off all file tools.
+is refused (it would be writable); a write folder inside a read folder is fine. On Windows, `overwrite=true` fails with an access error while another program has the target open; the old file stays whole. `-Remove` turns off all file tools.
 
 ## Update and rollback
 

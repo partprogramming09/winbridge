@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -545,6 +546,9 @@ func TestWAConcurrentOverwriteLeavesOneCompleteContent(t *testing.T) {
 			defer wg.Done()
 			for k := 0; k < 100; k++ {
 				if _, err := s.Write(p, payload(i), "", true); err != nil {
+					if runtime.GOOS == "windows" && errors.Is(err, fs.ErrPermission) {
+						continue // Windows refuses to replace a file another handle holds open (here the reader); the old content stays whole
+					}
 					bad.Store("write failed: " + err.Error())
 					return
 				}
