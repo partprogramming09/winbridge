@@ -58,8 +58,9 @@ type Jobs struct {
 
 // Files is the [files] table: the folders the file tools may reach. Without it the tools do not exist.
 type Files struct {
-	ReadRoots []string `toml:"read_roots"`
-	MaxBytes  int64    `toml:"max_bytes"`
+	ReadRoots  []string `toml:"read_roots"`
+	WriteRoots []string `toml:"write_roots"` // also readable; only data extensions are written
+	MaxBytes   int64    `toml:"max_bytes"`
 }
 
 // Config is the whole file.

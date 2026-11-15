@@ -81,6 +81,16 @@ func TestParseFilesTable(t *testing.T) {
 	}
 }
 
+func TestParseWriteRoots(t *testing.T) {
+	cfg, err := Parse(installed + "\n[files]\nwrite_roots = ['C:\\Users\\alice\\Out']\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cfg.Files.WriteRoots) != 1 || cfg.Files.WriteRoots[0] != `C:\Users\alice\Out` || len(cfg.Files.ReadRoots) != 0 {
+		t.Fatalf("files table = %+v", cfg.Files)
+	}
+}
+
 func TestParseRejectsUnknownFilesKey(t *testing.T) {
 	if _, err := Parse(installed + "\n[files]\nread_root = ['C:\\x']\n"); err == nil {
 		t.Fatal("a typo in [files] must be refused so it cannot silently open nothing, or something else")

@@ -341,8 +341,10 @@ try {
             try {
                 $mcp = 'http://' + $serverIp + ':' + $Port + '/mcp'
                 $argsFile = Join-Path $work 'files-args.json'
-                function Invoke-FileTool([string]$Tool, [string]$Path) {
-                    Set-Content -LiteralPath $argsFile -Value (@{ path = $Path } | ConvertTo-Json -Compress) -Encoding ascii
+                function Invoke-FileTool([string]$Tool, [string]$Path, [hashtable]$Extra = @{}) {
+                    $toolArgs = @{ path = $Path }
+                    foreach ($k in $Extra.Keys) { $toolArgs[$k] = $Extra[$k] }
+                    Set-Content -LiteralPath $argsFile -Value ($toolArgs | ConvertTo-Json -Compress) -Encoding ascii
                     return (& $env:WB_CALL_EXE --url $mcp --tool $Tool --args-file $argsFile 2>&1 | Out-String)
                 }
                 $okOut = Invoke-FileTool 'ReadFile' (Join-Path $filesRoot 'ok\a.txt')
@@ -360,6 +362,36 @@ try {
                     $out = Invoke-FileTool 'ReadFile' $escapes[$name]
                     Assert-That ($out -match 'isError: true' -and $out -notmatch 'top-secret-ci') ('ReadFile refuses ' + $name)
                 }
+
+                # Write folder: a data file goes in, nothing is replaced unless asked, no script goes in, and the doctor says it is open.
+                $outRoot = Join-Path $filesRoot 'out'
+                New-Item -ItemType Directory -Path $outRoot -Force | Out-Null
+                $setOut = & powershell -NoProfile -ExecutionPolicy Bypass -File $setter -ReadRoot (Join-Path $filesRoot 'ok') -WriteRoot $outRoot -Json | Out-String
+                Assert-That ($LASTEXITCODE -eq 0) ('Set-WinBridgeFiles.ps1 -WriteRoot succeeds: ' + $setOut.Trim())
+                $w1 = Invoke-FileTool 'WriteFile' (Join-Path $outRoot 'note.txt') @{ content = 'written-by-ci' }
+                Assert-That ($w1 -match 'wrote 13 bytes' -and $w1 -notmatch 'isError: true') ('WriteFile creates a file in the write folder: ' + $w1.Trim())
+                Assert-That ((Get-Content -LiteralPath (Join-Path $outRoot 'note.txt') -Raw).Trim() -eq 'written-by-ci') 'the file on disk has the written content'
+                $w2 = Invoke-FileTool 'WriteFile' (Join-Path $outRoot 'note.txt') @{ content = 'second' }
+                Assert-That ($w2 -match 'isError: true' -and $w2 -match 'already exists') 'WriteFile does not replace a file unless overwrite=true'
+                Assert-That ((Get-Content -LiteralPath (Join-Path $outRoot 'note.txt') -Raw).Trim() -eq 'written-by-ci') 'the refused write left the file alone'
+                $w3 = Invoke-FileTool 'WriteFile' (Join-Path $outRoot 'note.txt') @{ content = 'second'; overwrite = $true }
+                Assert-That ($w3 -notmatch 'isError: true' -and (Get-Content -LiteralPath (Join-Path $outRoot 'note.txt') -Raw).Trim() -eq 'second') 'WriteFile with overwrite=true replaces it'
+                foreach ($bad in @('run.ps1', 'run.bat', 'noext', 'note.txt.exe')) {
+                    $w = Invoke-FileTool 'WriteFile' (Join-Path $outRoot $bad) @{ content = 'x' }
+                    Assert-That ($w -match 'isError: true' -and -not (Test-Path -LiteralPath (Join-Path $outRoot $bad))) ('WriteFile refuses ' + $bad)
+                }
+                $w4 = Invoke-FileTool 'WriteFile' (Join-Path $filesRoot 'ok\b.txt') @{ content = 'x' }
+                Assert-That ($w4 -match 'isError: true' -and $w4 -match 'read-only' -and -not (Test-Path -LiteralPath (Join-Path $filesRoot 'ok\b.txt'))) 'WriteFile refuses a read-only folder'
+                $w5 = Invoke-FileTool 'WriteFile' (Join-Path $outRoot 'a.txt:s') @{ content = 'x' }
+                Assert-That ($w5 -match 'isError: true') 'WriteFile refuses an alternate data stream'
+                & cmd /c mklink /J (Join-Path $outRoot 'jn') $filesRoot | Out-Null
+                $w6 = Invoke-FileTool 'WriteFile' (Join-Path $outRoot 'jn\escaped.txt') @{ content = 'x' }
+                Assert-That ($w6 -match 'isError: true' -and -not (Test-Path -LiteralPath (Join-Path $filesRoot 'escaped.txt'))) 'WriteFile refuses to write through a junction that points outside the write folder'
+                & cmd /c rmdir (Join-Path $outRoot 'jn') | Out-Null
+                $doctorJson = (& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $root 'bin\Test-WinBridgeInstall.ps1') -Json | Out-String)
+                $doctor = $doctorJson | ConvertFrom-Json
+                $fw = @($doctor.checks | Where-Object { $_.name -eq 'files_write' })
+                Assert-That ($fw.Count -eq 1 -and $fw[0].status -eq 'WARN' -and $fw[0].detail -match 'write access is enabled for') 'doctor warns while a write folder exists'
             } finally {
                 Remove-Item Env:\WINBRIDGE_KEY -ErrorAction SilentlyContinue
             }

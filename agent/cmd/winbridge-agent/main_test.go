@@ -43,6 +43,31 @@ func TestPrintConfig(t *testing.T) {
 	}
 }
 
+func TestPrintConfigListsTheWriteFolders(t *testing.T) {
+	out := t.TempDir()
+	path := filepath.Join(t.TempDir(), "winbridge.toml")
+	toml := "[server]\nhost = \"100.64.0.1\"\nport = 8090\n[tools]\nenable = [\"Snapshot\"]\n[files]\nwrite_roots = ['" + out + "']\n"
+	if err := os.WriteFile(path, []byte(toml), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	r, w, _ := os.Pipe()
+	stdout := os.Stdout
+	os.Stdout = w
+	err := run([]string{"--config", path, "--print-config"}, func(string) string { return "" })
+	os.Stdout = stdout
+	w.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, _ := io.ReadAll(r)
+	var got struct {
+		WriteRoots []string `json:"write_roots"`
+	}
+	if err := json.Unmarshal(raw, &got); err != nil || len(got.WriteRoots) != 1 || got.WriteRoots[0] != out {
+		t.Fatalf("write_roots missing from the summary: %q %v", raw, err)
+	}
+}
+
 func TestBuildFilesIsNilWithoutTheTable(t *testing.T) {
 	store, err := buildFiles(config.Config{}, func(string) string { return "" })
 	if err != nil || store != nil {
@@ -63,6 +88,32 @@ func TestBuildFilesBuildsAStoreForAnAllowedFolder(t *testing.T) {
 	store, err := buildFiles(cfg, func(string) string { return "" })
 	if err != nil || store == nil {
 		t.Fatalf("an ordinary folder must be accepted: %v %v", store, err)
+	}
+}
+
+func TestBuildFilesWithOnlyWriteRootsStillRegisters(t *testing.T) {
+	cfg := config.Config{Files: config.Files{WriteRoots: []string{t.TempDir()}}}
+	store, err := buildFiles(cfg, func(string) string { return "" })
+	if err != nil || store == nil {
+		t.Fatalf("write_roots alone must give a store: %v %v", store, err)
+	}
+}
+
+func TestBuildFilesRefusesDangerousWriteRoots(t *testing.T) {
+	base := t.TempDir()
+	local := filepath.Join(base, "local")
+	if err := os.MkdirAll(filepath.Join(local, "winbridge"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	getenv := func(k string) string {
+		if k == "LOCALAPPDATA" {
+			return local
+		}
+		return ""
+	}
+	cfg := config.Config{Files: config.Files{WriteRoots: []string{filepath.Join(local, "winbridge")}}}
+	if _, err := buildFiles(cfg, getenv); err == nil || !strings.Contains(err.Error(), "overlaps") {
+		t.Fatalf("a dangerous write folder must be refused, got %v", err)
 	}
 }
 

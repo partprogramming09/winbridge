@@ -323,6 +323,23 @@ The agent also refuses to start if a listed folder does not exist (an unplugged 
 it off run `Set-WinBridgeFiles.ps1 -Remove`. The Python fallback has no file tools. The folders limit a deceived agent, not
 someone who already controls your Windows account; see [ADR 0003](../adr/0003-herramientas-de-archivos-opt-in.md).
 
+### Let the agent write files (opt-in)
+
+Writing is a separate list of folders, and the riskiest part of the file tools (read the write-folder paragraph in
+[`SECURITY.md`](../../SECURITY.md) first). Use an empty folder made for it:
+
+```powershell
+.\bootstrap\scripts\Set-WinBridgeFiles.ps1 -ReadRoot C:\Users\alice\Shared -WriteRoot C:\Users\alice\AgentOut
+```
+
+A write folder is also readable. `WriteFile{path, content, encoding?, overwrite?}` creates a file there only if it does not
+exist (`overwrite=true` replaces it), accepts only `txt md json csv log xml yaml yml toml ini html png jpg pdf` (case
+ignored), needs the parent folder to exist and takes at most `max_bytes` (UTF-8 or `encoding=base64`). Anything else, a
+read-only folder or a path outside returns `isError: true` and writes nothing. The script writes the whole `[files]` table
+every time, so run it with every folder you want: `-ReadRoot` alone drops the write folders. `winbridge doctor` shows
+`files_write` as a warning while a write folder exists and as a failure if it was deleted. A read folder inside a write folder
+is refused (it would be writable); a write folder inside a read folder is fine. `-Remove` turns off all file tools.
+
 ## Update and rollback
 
 For a Go install, run `winbridge update <host> --bundle <zip>` on the Mac: it copies the ZIP over SSH, checks its SHA-256,

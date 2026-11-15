@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   opened file (links, junctions, 8.3 names, streams and device names are refused). The agent will not start with a folder
   that is a drive root, the user profile, WinBridge's own folders, `.ssh`, `AppData`, the Start menu, Windows, Program Files
   or a `PATH` folder. They are built-in tools: `tools_count` stays 9. See ADR 0003.
+- Opt-in `WriteFile`, only for folders listed in `write_roots` (`Set-WinBridgeFiles.ps1 -WriteRoot`). It never replaces a file
+  unless `overwrite=true` (then through a temporary file and a rename), accepts only data extensions (`txt`, `md`, `json`,
+  `csv`, `log`, `xml`, `yaml`, `yml`, `toml`, `ini`, `html`, `png`, `jpg`, `pdf`; the list cannot be changed) and writes
+  through a handle on the checked folder, so a link swapped in meanwhile cannot redirect it. A write folder is also readable;
+  a read folder inside a write folder is refused at start. `doctor` reports `files_write` as a warning while any write folder
+  exists, and as a failure if one is missing.
 
 ## [0.1.0] - 2026-11-14
 

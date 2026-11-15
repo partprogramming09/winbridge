@@ -472,6 +472,24 @@ def test_local_toml_accepts_the_files_table():
     assert "[files]" in guard
 
 
+def test_files_script_has_write_root():
+    setter = _read(BOOTSTRAP / "scripts" / "Set-WinBridgeFiles.ps1")
+    assert "[string[]]$WriteRoot" in setter and "write_roots" in setter
+    assert "'-WriteRoot', $WriteRoot" in setter and "must be an absolute path with a drive letter" in setter, (
+        "write folders get the same checks as read folders"
+    )
+    assert "-ReadRoot or -WriteRoot" in setter, "one of the two is required unless -Remove"
+
+
+def test_doctor_warns_while_write_roots_exist():
+    doctor = _read(BOOTSTRAP / "lib" / "Doctor.ps1")
+    assert "files_write" in doctor and "write access is enabled for: " in doctor
+    assert "write_roots" in doctor, "the doctor reads the folders from the agent's own --print-config"
+    assert doctor.index("New-WinBridgeFilesWriteCheck") < doctor.index("function Invoke-WinBridgeDoctor"), (
+        "the check is a function the bootstrap tests can call"
+    )
+
+
 def test_files_setter_validates_roots_and_checks_with_the_agent():
     setter = _read(BOOTSTRAP / "scripts" / "Set-WinBridgeFiles.ps1")
     assert "[files]" in setter and "read_roots" in setter

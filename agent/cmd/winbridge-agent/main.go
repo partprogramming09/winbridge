@@ -85,6 +85,7 @@ func run(args []string, getenv func(string) string) error {
 		return json.NewEncoder(os.Stdout).Encode(map[string]any{
 			"host": cfg.Server.Host, "port": cfg.Server.Port, "ip_allowlist": cfg.Security.IPAllowlist,
 			"enable_tier3": cfg.Security.EnableTier3, "tools": cfg.Tools.Enable, "exclude": cfg.Tools.Exclude,
+			"write_roots": cfg.Files.WriteRoots, // the doctor warns while any exist
 		})
 	}
 	if *hostFlag != "" {
@@ -198,10 +199,10 @@ func buildJobs(cfg config.Config) (*jobs.Store, error) {
 	return jobs.New(cfg.Jobs.Root)
 }
 
-// buildFiles returns the file store for the [files] table, or nil when it has no read_roots. Folders that hold
+// buildFiles returns the file store for the [files] table, or nil when it has no read_roots or write_roots. Folders that hold
 // WinBridge itself, the jobs, the task scripts, keys, startup programs or programs on the PATH are refused at start.
 func buildFiles(cfg config.Config, getenv func(string) string) (*files.Store, error) {
-	if len(cfg.Files.ReadRoots) == 0 {
+	if len(cfg.Files.ReadRoots) == 0 && len(cfg.Files.WriteRoots) == 0 {
 		return nil, nil
 	}
 	if err := files.CheckEnvironment(getenv, runtime.GOOS == "windows"); err != nil {
@@ -220,7 +221,8 @@ func buildFiles(cfg config.Config, getenv func(string) string) (*files.Store, er
 		}
 	}
 	return files.New(files.Config{
-		ReadRoots: cfg.Files.ReadRoots, MaxBytes: cfg.Files.MaxBytes, Home: getenv("USERPROFILE"), Forbidden: forbidden,
+		ReadRoots: cfg.Files.ReadRoots, WriteRoots: cfg.Files.WriteRoots, MaxBytes: cfg.Files.MaxBytes,
+		Home: getenv("USERPROFILE"), Forbidden: forbidden,
 	})
 }
 

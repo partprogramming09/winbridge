@@ -56,7 +56,7 @@ func TestFileToolsExistOnlyWithFilesAndKeepTheNineToolCount(t *testing.T) {
 	}
 	srv, _ := startWithFiles(t)
 	_, status := get(t, srv.URL+"/status", testKey)
-	if status["tools_count"] != float64(9) || !strings.Contains(fmt.Sprint(status["builtin_tools"]), "ReadFile") {
+	if status["tools_count"] != float64(9) || !strings.Contains(fmt.Sprint(status["builtin_tools"]), "ReadFile") || !strings.Contains(fmt.Sprint(status["builtin_tools"]), "WriteFile") {
 		t.Fatalf("tools_count must stay 9 and the file tools be built-in: %v", status)
 	}
 }

@@ -18,17 +18,19 @@ const (
 
 // Config holds what the owner put in the [files] table, plus what the agent knows about itself.
 type Config struct {
-	ReadRoots []string
-	MaxBytes  int64    // largest read, in bytes; 0 means 256 KiB, at most 1 MiB
-	Home      string   // the user's profile folder: a root may not be it or contain it
-	Forbidden []string // folders no root may contain or lie inside (WinBridge's own, the jobs and tasks folders, DangerousPaths)
+	ReadRoots  []string
+	WriteRoots []string // also readable; the only folders Write may touch
+	MaxBytes   int64    // largest read or write, in bytes; 0 means 256 KiB, at most 1 MiB
+	Home       string   // the user's profile folder: a root may not be it or contain it
+	Forbidden  []string // folders no root may contain or lie inside (WinBridge's own, the jobs and tasks folders, DangerousPaths)
 }
 
 // Store is the only way to touch files: every path goes through the allowed folders.
 type Store struct {
-	roots    []string // canonical
-	spelled  []string // canonical and as configured: a path outside all of them is refused without touching the disk
-	maxBytes int64
+	roots      []string // canonical: every folder that may be read (read roots and write roots)
+	writeRoots []string // canonical: the subset Write may touch
+	spelled    []string // canonical and as configured: a path outside all of them is refused without touching the disk
+	maxBytes   int64
 }
 
 const maxAllowedBytes = 1 << 20
@@ -44,7 +46,7 @@ func New(cfg Config) (*Store, error) {
 		s.maxBytes = defaultMaxBytes
 	}
 	forbidden := forbiddenForms(cfg.Forbidden)
-	for _, root := range cfg.ReadRoots {
+	for i, root := range append(append([]string{}, cfg.ReadRoots...), cfg.WriteRoots...) {
 		canon, err := canonicalDir(root)
 		if err != nil {
 			return nil, fmt.Errorf("files: folder %q: %w", root, err)
@@ -65,7 +67,18 @@ func New(cfg Config) (*Store, error) {
 			}
 		}
 		s.roots = append(s.roots, canon)
+		if i >= len(cfg.ReadRoots) {
+			s.writeRoots = append(s.writeRoots, canon)
+		}
 		s.spelled = append(s.spelled, canon, filepath.Clean(root))
+	}
+	nRead := len(s.roots) - len(s.writeRoots)
+	for _, r := range s.roots[:nRead] {
+		for _, w := range s.writeRoots {
+			if within(w, r, onWindows) && !within(r, w, onWindows) {
+				return nil, fmt.Errorf("files: folder %q is meant to be read-only but lies inside the write folder %q, so it would be writable", r, w)
+			}
+		}
 	}
 	return s, nil
 }

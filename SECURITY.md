@@ -71,12 +71,21 @@ own code review and were not shown to be exploitable.
   (`CallServerTool` and others) and `RunTask`. `/status` lists the first two groups in `builtin_tools`, outside `tools_count`. `RunTask` appears in `tools` and is
   counted, so `winbridge adopt` reports a tool-count mismatch while `[tasks]` is defined. They exist only if the owner
   configures them.
-- **Opt-in file tools (`ListFiles`, `ReadFile`).** They exist only with a `[files]` table in `local.toml`. A key holder reads
-  every file inside the folders the owner named and nothing outside them; the agent refuses to start with a folder that is a
+- **Opt-in file tools (`ListFiles`, `ReadFile`, `WriteFile`).** They exist only with a `[files]` table in `local.toml`. A key
+  holder reads every file inside the folders the owner named and nothing outside them; the agent refuses to start with a folder that is a
   drive root, the user profile, WinBridge's folders, `.ssh`, `AppData`, the Start menu, Windows, Program Files or a `PATH`
   folder. The folders limit a deceived agent, not an attacker who already controls the Windows account, which can read the
   same files. Choose folders that hold only what you are willing to share. They are built-in tools and do not count in
   `tools_count`. The Python fallback does not have them. See [ADR 0003](docs/adr/0003-herramientas-de-archivos-opt-in.md).
+  **Write folders (`write_roots`) are the riskiest part.** `WriteFile` accepts only data extensions and never replaces a file
+  unless asked, but it cannot know what else reads a file. Do not pick a folder where a program, a scheduled task, an editor
+  or a build tool picks up files by name (`package.json`, `tasks.json`, `pyproject.toml`, workflow `.yml` files, `.ini`
+  files a program loads): a data file in the wrong place is still an instruction. Pick an empty folder made for this, outside
+  your projects and outside any folder that is synchronized to other machines. There is no cap on the number of writes or on
+  the total size (1 MiB each, 256 KiB by default): a key holder can fill the disk with new names. A replaced file gets the
+  permissions its folder gives new files, not the ones the old file had. `doctor` warns (`files_write`) for as long as a write
+  folder exists. The write goes through a handle on the checked folder, but only the agent's own tools are confined: someone
+  who can already plant links in the folder is a local attacker, outside what these limits cover.
 - **`sshd` listens on `0.0.0.0:22` and `:::22`.** Only the Windows Firewall rules, which allow the Tailscale ranges, limit who
   can reach it. A `ListenAddress` restriction was postponed because a mistake would cut your only way in. `winbridge doctor`
   checks the firewall rules and flags a rule that opens port 22 or the MCP port to `Any`, `LocalSubnet` and similar broad

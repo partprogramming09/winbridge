@@ -56,3 +56,6 @@ func openCanonical(p string) (*os.File, string, error) {
 	}
 	return f, opened, nil
 }
+
+// openedPath is where the kernel says the open file really is.
+func openedPath(f *os.File) (string, error) { return fdPath(f) }

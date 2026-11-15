@@ -1,9 +1,10 @@
-# Lets the agent list and read files inside folders the owner names: writes the [files] table to config\local.toml (kept
+# Lets the agent list, read and (in -WriteRoot folders, data extensions only) write files inside folders the owner names: writes the [files] table to config\local.toml (kept
 # across updates), checks the result with the agent (which refuses dangerous folders) and restarts it. -Remove deletes the
 # table, and with it the file tools. It runs as the owner and needs no elevation.
 
 param(
     [string[]]$ReadRoot = @(),
+    [string[]]$WriteRoot = @(),
     [switch]$Remove,
     [switch]$NoRestart,
     [switch]$Json
@@ -21,14 +22,16 @@ $binRoot = $PSScriptRoot
 
 if ($Json) { Set-WinBridgeConsoleQuiet -Quiet $true }
 
-$result = [pscustomobject]@{ ok = $false; read_roots = @($ReadRoot); action = $null; error = $null }
+$result = [pscustomobject]@{ ok = $false; read_roots = @($ReadRoot); write_roots = @($WriteRoot); action = $null; error = $null }
 
 try {
     if (-not $Remove) {
-        if (@($ReadRoot).Count -eq 0) { throw '-ReadRoot needs at least one folder (or use -Remove).' }
-        foreach ($root in $ReadRoot) {
-            if (-not [IO.Path]::IsPathRooted($root) -or $root -notmatch '^[A-Za-z]:[\\/]') { throw ('-ReadRoot must be an absolute path with a drive letter: ' + $root) }
-            if ($root -match "['\r\n]") { throw '-ReadRoot cannot hold a single quote or a line break.' }
+        if (@($ReadRoot).Count + @($WriteRoot).Count -eq 0) { throw '-ReadRoot or -WriteRoot needs at least one folder (or use -Remove).' }
+        foreach ($pair in @(@('-ReadRoot', $ReadRoot), @('-WriteRoot', $WriteRoot))) {
+            foreach ($root in $pair[1]) {
+                if (-not [IO.Path]::IsPathRooted($root) -or $root -notmatch '^[A-Za-z]:[\\/]') { throw ($pair[0] + ' must be an absolute path with a drive letter: ' + $root) }
+                if ($root -match "['\r\n]") { throw ($pair[0] + ' cannot hold a single quote or a line break.') }
+            }
         }
     }
     $configDir = Split-Path -Parent (Get-WinBridgeConfigPath)
@@ -50,10 +53,10 @@ try {
     if ($Remove) {
         $result.action = 'removed'
     } else {
-        $quoted = @($ReadRoot | ForEach-Object { "'" + $_ + "'" })
         $lines.Add('')
         $lines.Add('[files]')
-        $lines.Add('read_roots = [' + ($quoted -join ', ') + ']')
+        if (@($ReadRoot).Count -gt 0) { $lines.Add('read_roots = [' + ((@($ReadRoot | ForEach-Object { "'" + $_ + "'" })) -join ', ') + ']') }
+        if (@($WriteRoot).Count -gt 0) { $lines.Add('write_roots = [' + ((@($WriteRoot | ForEach-Object { "'" + $_ + "'" })) -join ', ') + ']') }
         $result.action = 'set'
     }
 

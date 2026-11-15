@@ -78,3 +78,6 @@ func openCanonical(p string) (*os.File, string, error) {
 	}
 	return os.NewFile(uintptr(h), real), real, nil
 }
+
+// openedPath is where Windows says the open file really is.
+func openedPath(f *os.File) (string, error) { return finalPath(windows.Handle(f.Fd())) }
