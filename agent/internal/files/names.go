@@ -16,13 +16,11 @@ var (
 
 var (
 	driveLetter = regexp.MustCompile(`^[A-Za-z]:[\\/]`)
-	// shortName matches the 8.3 form of a long name (PROGRA~1, DOCUME~1.TXT).
-	shortName = regexp.MustCompile(`^[^.]{1,6}~[0-9]+(\..{0,3})?$`)
-	reserved  = map[string]bool{"CON": true, "PRN": true, "AUX": true, "NUL": true}
+	reserved    = map[string]bool{"CON": true, "PRN": true, "AUX": true, "NUL": true}
 )
 
 // checkName validates the text of an absolute path without touching the disk. With windows set it also refuses what
-// Win32 rewrites into another path: streams, devices, 8.3 names, a trailing dot or space, and the \\?\, \\.\ and UNC prefixes.
+// Win32 rewrites into another path: streams, devices, a trailing dot or space, and the \\?\, \\.\ and UNC prefixes.
 func checkName(p string, windows bool) error {
 	if p == "" || strings.ContainsRune(p, 0) {
 		return ErrInvalidPath
@@ -44,7 +42,7 @@ func checkName(p string, windows bool) error {
 		if part == "." || part == ".." || strings.HasSuffix(part, ".") || strings.HasSuffix(part, " ") {
 			return ErrInvalidPath
 		}
-		if isDevice(part) || shortName.MatchString(part) {
+		if isDevice(part) {
 			return ErrInvalidPath
 		}
 	}

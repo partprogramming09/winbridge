@@ -258,7 +258,6 @@ func TestAdvCheckNameHostileWindowsPaths(t *testing.T) {
 		`C:\Shared\a.txt::$DATA`, `C:\Shared\a.txt:stream`, `C:\Shared:x\a`, `C:\Shared\NUL.`, `C:\Shared\nul.tar.gz`,
 		`C:\Shared\Aux`, `C:\Shared\PRN.txt`, `C:\Shared\CON .txt`, `C:\Shared\COM9`, `C:\Shared\LPT1.`, `C:/Shared/NUL`,
 		`C:\Shared\CON\a.txt`, `C:\Shared\a\..`, `C:\Shared\...`, `C:\Shared\.. `, `C:\Shared\a. `, `C:\Shared\a \b`,
-		`C:\Shared\SECRET~1.TXT`, `C:\Shared\A~1`, `C:\Shared\PROGRA~2\x`,
 		`\\?\C:\Shared\a`, `\\?\UNC\srv\share\a`, `\\.\C:\Shared\a`, `//?/C:/Shared/a`, `//./NUL`, `\\srv\share\a`, `//srv/share/a`,
 		`\Shared\a`, `\C:\Shared\a`, `C:`, `C:Shared\a`, `C:a`, `:\a`, `1:\a`, `CC:\a`, `Shared\a`, `.\a`, `..\a`, "", "\x00",
 		"C:\\Shared\\a\x00.txt", "C:\\\x00", `C:\Shared\a.txt` + "\x00",
@@ -275,16 +274,6 @@ func TestAdvCheckNameValidWindowsPathsStillPass(t *testing.T) {
 		`C:\\Shared\\\a`, `C:\Shared\a b\c d.txt`, `Z:\x`, `C:\Shared\ñandú.txt`, `C:\Shared\日本語.txt`} {
 		if err := checkName(p, true); err != nil {
 			t.Errorf("checkName(%q, windows) = %v, want nil", p, err)
-		}
-	}
-}
-
-// TestFixed_CheckNameAcceptsEightDotThreeNamesWithTwoDigitCounter: Windows builds short names as 6 chars + ~N for N<10 but
-// 5 chars + ~N for N=10..99, 4 chars + ~N for N=100.. The regexp only knows one digit, so PROGR~10 slips through.
-func TestFixed_CheckNameAcceptsEightDotThreeNamesWithTwoDigitCounter(t *testing.T) {
-	for _, p := range []string{`C:\Shared\PROGR~10`, `C:\Shared\DOCUM~11.TXT`, `C:\Shared\SECR~100.TXT`, `C:\Shared\A~99`} {
-		if err := checkName(p, true); !errors.Is(err, ErrInvalidPath) {
-			t.Errorf("checkName(%q, windows) = %v, want ErrInvalidPath (8.3 name with a 2-3 digit counter)", p, err)
 		}
 	}
 }
@@ -314,8 +303,6 @@ func TestAdvCheckNameUnixOnlyNeedsLeadingSlashAndNoNul(t *testing.T) {
 	}
 }
 
-var advShort = shortName // same regexp the production code uses, for the oracle below
-
 // advWindowsOracle says why an accepted Windows path is wrong, or "" when it is fine.
 func advWindowsOracle(p string) string {
 	if len(p) < 3 || !(p[0] >= 'a' && p[0] <= 'z' || p[0] >= 'A' && p[0] <= 'Z') || p[1] != ':' || p[2] != '\\' && p[2] != '/' {
@@ -335,8 +322,6 @@ func advWindowsOracle(p string) string {
 			return "device " + c
 		case len(base) == 4 && (strings.HasPrefix(base, "COM") || strings.HasPrefix(base, "LPT")) && base[3] >= '1' && base[3] <= '9':
 			return "device " + c
-		case advShort.MatchString(c):
-			return "8.3 name " + c
 		}
 	}
 	return ""

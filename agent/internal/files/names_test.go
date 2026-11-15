@@ -17,7 +17,6 @@ func TestCheckNameRejectsWindowsTricks(t *testing.T) {
 		`\\srv\share\a`,
 		`C:\Shared\a.`,
 		"C:\\Shared\\a ",
-		`C:\Shared\PROGRA~1`,
 		`C:\Shared\..\Users`,
 		`C:\Shared\.\a`,
 		`C:/Shared/a.txt:s`,
@@ -57,6 +56,16 @@ func TestCheckNameIsPermissiveOffWindowsForColonAndDevices(t *testing.T) {
 	for _, p := range []string{"/tmp/a:b", "/tmp/nul", "/tmp/a."} {
 		if err := checkName(p, false); err != nil {
 			t.Errorf("checkName(%q, unix) = %v, want nil", p, err)
+		}
+	}
+}
+
+// A short (8.3) name is not refused by its text: a TEMP folder spelled with a short user folder is ordinary. Where it really
+// points is decided on the opened file, so a short name that leads outside the folder is still refused there.
+func TestCheckNameAcceptsShortNames(t *testing.T) {
+	for _, p := range []string{`C:\Temp\USERNA~1\Local\a.txt`, `C:\Shared\PROGRA~1`, `C:\Shared\PROGR~10`, `C:\Shared\DOCUM~11.TXT`} {
+		if err := checkName(p, true); err != nil {
+			t.Errorf("checkName(%q, windows) = %v, want nil", p, err)
 		}
 	}
 }

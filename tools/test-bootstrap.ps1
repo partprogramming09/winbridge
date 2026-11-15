@@ -428,7 +428,7 @@ try {
         $previous = $ErrorActionPreference
         $ErrorActionPreference = 'Stop'
         try {
-            $r = Invoke-WinBridgeNative -FilePath $self -Arguments @('-NoProfile', '-Command', '[Console]::Error.WriteLine("agent-says-no"); exit 3')
+            $r = Invoke-WinBridgeNative -FilePath $self -Arguments @('-NoProfile', '-Command', '[Console]::Error.WriteLine(''agent-says-no''); exit 3')
         } finally {
             $ErrorActionPreference = $previous
         }

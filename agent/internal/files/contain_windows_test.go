@@ -50,9 +50,27 @@ func TestOpenInsideRejectsShortNameEscape(t *testing.T) {
 	if short == "" || !strings.Contains(short, "~") {
 		t.Skip("8.3 short names are off on this volume")
 	}
-	// checkName refuses the short form before the disk is touched, which is the first line of defence.
-	if _, _, err := openInside([]string{root}, filepath.Join(short, "secret.txt")); !errors.Is(err, ErrInvalidPath) {
-		t.Fatalf("err = %v, want ErrInvalidPath", err)
+	// The short form is not refused by its text; the opened file's real path is outside the root, so it is refused there.
+	if _, _, err := openInside([]string{root}, filepath.Join(short, "secret.txt")); !errors.Is(err, ErrOutside) {
+		t.Fatalf("err = %v, want ErrOutside", err)
+	}
+}
+
+func TestOpenInsideAcceptsTheShortNameOfAFileInsideTheRoot(t *testing.T) {
+	root := newRoot(t, "Shared")
+	inside := filepath.Join(root, "a long inside folder")
+	writeFile(t, filepath.Join(inside, "note.txt"), "x")
+	short := shortPath(t, inside)
+	if short == "" || !strings.Contains(short, "~") {
+		t.Skip("8.3 short names are off on this volume")
+	}
+	f, real, err := openInside([]string{root}, filepath.Join(short, "note.txt"))
+	if err != nil {
+		t.Fatalf("a short name that leads inside must be accepted: %v", err)
+	}
+	f.Close()
+	if strings.Contains(real, "~") {
+		t.Errorf("the canonical path must be the long one, got %q", real)
 	}
 }
 
