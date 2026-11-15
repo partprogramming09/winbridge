@@ -101,6 +101,17 @@ El contrato de las 9 herramientas de perfil sigue siendo el del servidor Python.
   herramientas integradas: aparecen en `/status.builtin_tools`, no en `tools_count`, y no comprueban la sesión bloqueada
   porque no tocan el escritorio. Ver `JOBS.md`.
 
+- **Archivos (solo con `[files]` en `local.toml`).** `ListFiles{path}`, `ReadFile{path, encoding?, offset?}` y
+  `WriteFile{path, content, encoding?, overwrite?}` son herramientas integradas: aparecen en `/status.builtin_tools`, no en `tools_count`. Solo alcanzan las
+  carpetas de `read_roots`; una ruta fuera de ellas, con trucos de Windows (`..`, flujos `a:s`, `NUL`, nombres 8.3, `\\?\`,
+  UNC) o a través de un enlace o unión que salga, da un error y nunca contenido. `ListFiles` devuelve como mucho 500
+  entradas; `ReadFile` devuelve hasta `max_bytes` (256 KiB por defecto, tope 1 MiB) como UTF-8 o `base64` y marca
+  `truncated`. `WriteFile` solo escribe en las carpetas de `write_roots` (que también se leen), solo extensiones de datos
+  (lista cerrada), no pisa un archivo salvo `overwrite=true`, exige que la carpeta padre exista, acepta hasta `max_bytes` y
+  responde `wrote N bytes to <ruta>` como texto; con el cuerpo de la petición limitado a 4 MiB, un contenido de texto con
+  muchos caracteres de control escapados puede dar 413 antes de llegar al límite. `parity-check` las salta como las de
+  trabajos. Ver el ADR 0003.
+
 Los booleanos se aceptan como `true`/`false` o como las cadenas `"true"`, `"1"`, `"yes"` (`_tobool`).
 
 ## Fuera del contrato

@@ -66,3 +66,33 @@ func TestBadAllowlistEntriesAreReported(t *testing.T) {
 		t.Fatalf("both bad entries must be named, got %v", err)
 	}
 }
+
+func TestParseFilesTable(t *testing.T) {
+	cfg, err := Parse(installed + "\n[files]\nread_roots = ['C:\\Users\\alice\\Shared']\nmax_bytes = 4096\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cfg.Files.ReadRoots) != 1 || cfg.Files.ReadRoots[0] != `C:\Users\alice\Shared` || cfg.Files.MaxBytes != 4096 {
+		t.Fatalf("files table = %+v", cfg.Files)
+	}
+	empty, err := Parse(installed)
+	if err != nil || len(empty.Files.ReadRoots) != 0 {
+		t.Fatalf("no [files] table must mean no roots: %+v %v", empty.Files, err)
+	}
+}
+
+func TestParseWriteRoots(t *testing.T) {
+	cfg, err := Parse(installed + "\n[files]\nwrite_roots = ['C:\\Users\\alice\\Out']\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cfg.Files.WriteRoots) != 1 || cfg.Files.WriteRoots[0] != `C:\Users\alice\Out` || len(cfg.Files.ReadRoots) != 0 {
+		t.Fatalf("files table = %+v", cfg.Files)
+	}
+}
+
+func TestParseRejectsUnknownFilesKey(t *testing.T) {
+	if _, err := Parse(installed + "\n[files]\nread_root = ['C:\\x']\n"); err == nil {
+		t.Fatal("a typo in [files] must be refused so it cannot silently open nothing, or something else")
+	}
+}

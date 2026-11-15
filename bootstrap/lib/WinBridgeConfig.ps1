@@ -129,7 +129,7 @@ function Write-WinBridgeConfig {
     $content = $content.Replace('{{ALLOWED_CLIENTS}}', $clientText)
     $localPath = Join-Path (Split-Path -Parent $ConfigPath) 'local.toml'
     if (Test-Path -LiteralPath $localPath) {
-        $local = Get-Content -LiteralPath $localPath -Raw
+        $local = Get-Content -LiteralPath $localPath -Raw -Encoding UTF8
         Assert-WinBridgeLocalConfig -Text $local
         $content = $content.TrimEnd() + "`r`n`r`n# local.toml (kept across updates)`r`n" + $local
     }
@@ -139,15 +139,34 @@ function Write-WinBridgeConfig {
     return $ConfigPath
 }
 
-# Refuses a local.toml that touches anything but [tasks.*] and [servers.*], so it cannot widen the profile.
+# Refuses a local.toml that touches anything but [tasks.*], [servers.*], [jobs] and [files], so it cannot widen the profile.
 function Assert-WinBridgeLocalConfig {
     param([Parameter(Mandatory = $true)][AllowEmptyString()][string]$Text)
     foreach ($line in ($Text -split "`r?`n")) {
         $trimmed = $line.Trim()
-        if ($trimmed.StartsWith('[') -and $trimmed -notmatch '^\[((tasks|servers)\.[A-Za-z0-9._"-]+|jobs)\]\s*(#.*)?$') {
-            throw ('local.toml may only hold [tasks.*], [servers.*] and [jobs] tables; found: ' + $trimmed)
+        if ($trimmed.StartsWith('[') -and $trimmed -notmatch '^\[((tasks|servers)\.[A-Za-z0-9._"-]+|jobs|files)\]\s*(#.*)?$') {
+            throw ('local.toml may only hold [tasks.*], [servers.*], [jobs] and [files] tables; found: ' + $trimmed)
         }
     }
+}
+
+# Runs a native program and returns its exit code and its output (stdout and stderr). Windows PowerShell 5.1 turns the
+# first stderr line of a redirected native command into a terminating error under $ErrorActionPreference = 'Stop', which
+# would skip the caller's rollback, so the preference is relaxed around the call only.
+function Invoke-WinBridgeNative {
+    param(
+        [Parameter(Mandatory = $true)][string]$FilePath,
+        [string[]]$Arguments = @()
+    )
+    $previous = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $output = & $FilePath @Arguments 2>&1
+        $code = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previous
+    }
+    return [pscustomobject]@{ ExitCode = $code; Output = (($output | ForEach-Object { "$_" }) -join "`n").Trim() }
 }
 
 function Get-WinBridgeGoConfigSummary {

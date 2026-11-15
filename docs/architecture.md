@@ -60,8 +60,9 @@ Con `WINBRIDGE_STRICT=1` el servidor se niega a arrancar salvo que se cumpla tod
 
 Las 9 herramientas de perfil son las únicas que cuentan. El agente Go añade herramientas **integradas**: `Diagnose` y
 `Processes` (siempre, solo lectura) y, si `local.toml` define `[jobs]`, `[servers]` o `[tasks]`, las de trabajos (`SubmitJob`…) y las
-de pasarela (`CallServerTool`…). No cuentan en `tools_count`; `/status` las lista en `builtin_tools`, para que las 9
-herramientas de perfil se puedan seguir comprobando. Con `[tasks]` aparece además `RunTask`, que sí entra en `tools` y
+de pasarela (`CallServerTool`…) y, si define `[files]`, las de archivos (`ListFiles`, `ReadFile`, `WriteFile`; ver el
+[ADR 0003](adr/0003-herramientas-de-archivos-opt-in.md)). No cuentan en `tools_count`; `/status` las lista en
+`builtin_tools`, para que las 9 herramientas de perfil se puedan seguir comprobando. Con `[tasks]` aparece además `RunTask`, que sí entra en `tools` y
 en `tools_count`.
 
 ## Lo que no hace

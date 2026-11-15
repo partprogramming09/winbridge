@@ -12,6 +12,7 @@ import (
 
 	"github.com/partprogramming09/winbridge/agent/internal/desktop"
 	"github.com/partprogramming09/winbridge/agent/internal/diag"
+	"github.com/partprogramming09/winbridge/agent/internal/files"
 	"github.com/partprogramming09/winbridge/agent/internal/jobs"
 	"github.com/partprogramming09/winbridge/agent/internal/parity"
 	"github.com/partprogramming09/winbridge/agent/internal/procs"
@@ -95,6 +96,23 @@ func TestGoAgentWithJobsStillConforms(t *testing.T) {
 	srv := httptest.NewServer(server.New(server.Options{
 		Version: "0.0.0-test", Upstream: "native-go", Key: key, Allowlist: []*net.IPNet{loopback},
 		Desktop: &desktop.Fake{}, Tools: profile.Tools, Jobs: store, Strict: true,
+	}))
+	defer srv.Close()
+	if fails := parity.Run(context.Background(), srv.URL, key); len(fails) != 0 {
+		t.Fatalf("deviations from the contract:\n%s", strings.Join(fails, "\n"))
+	}
+}
+
+// TestGoAgentWithFilesStillConforms enables the file tools, which exist only when the owner configures [files].
+func TestGoAgentWithFilesStillConforms(t *testing.T) {
+	store, err := files.New(files.Config{ReadRoots: []string{t.TempDir()}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, loopback, _ := net.ParseCIDR("127.0.0.0/8")
+	srv := httptest.NewServer(server.New(server.Options{
+		Version: "0.0.0-test", Upstream: "native-go", Key: key, Allowlist: []*net.IPNet{loopback},
+		Desktop: &desktop.Fake{}, Tools: profile.Tools, Files: store, Strict: true,
 	}))
 	defer srv.Close()
 	if fails := parity.Run(context.Background(), srv.URL, key); len(fails) != 0 {

@@ -43,6 +43,19 @@ function Add-WinBridgeResultCheck {
     return $checks.Add((New-WinBridgeCheck -Name $Result.Name -Status $statusValue -Detail $Result.Detail))
 }
 
+# files_write: a write folder is a door the owner opened, so the doctor keeps saying it is open (a warning, not a
+# failure) and fails when a listed folder is gone. Returns nothing when there are no write folders.
+function New-WinBridgeFilesWriteCheck {
+    param([AllowEmptyCollection()][string[]]$WriteRoots = @())
+    $roots = @($WriteRoots | Where-Object { $_ })
+    if ($roots.Count -eq 0) { return $null }
+    $missing = @($roots | Where-Object { -not (Test-Path -LiteralPath $_ -PathType Container) })
+    if ($missing.Count -gt 0) {
+        return (New-WinBridgeCheck -Name 'files_write' -Status 'FAIL' -Detail ('write folder does not exist: ' + ($missing -join ', ')))
+    }
+    return (New-WinBridgeCheck -Name 'files_write' -Status 'WARN' -Detail ('write access is enabled for: ' + ($roots -join ', ')))
+}
+
 function Invoke-WinBridgeDoctor {
     param([switch]$PrePairing, [switch]$SkipSsh)
 
@@ -125,6 +138,10 @@ function Invoke-WinBridgeDoctor {
             }
         }
         $checks.Add((New-WinBridgeCheck -Name 'config' -Status $configStatus -Detail $configDetail))
+        if ($configSummary.PSObject.Properties['write_roots']) { # absent in the Python summary and in older agents
+            $filesWrite = New-WinBridgeFilesWriteCheck -WriteRoots @($configSummary.write_roots)
+            if ($null -ne $filesWrite) { $checks.Add($filesWrite) }
+        }
     }
 
     $credentialUnreadable = $false

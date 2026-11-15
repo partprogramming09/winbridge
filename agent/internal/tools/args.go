@@ -2,8 +2,10 @@ package tools
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -106,4 +108,14 @@ func (a Args) RequireString(name string) (string, error) {
 		return "", fmt.Errorf("missing required parameter %s", name)
 	}
 	return s, nil
+}
+
+// only refuses any parameter that is not in allowed, so a typo cannot be silently ignored.
+func only(a Args, allowed ...string) error {
+	for key := range a {
+		if !slices.Contains(allowed, key) {
+			return errors.New("unexpected parameter " + key)
+		}
+	}
+	return nil
 }

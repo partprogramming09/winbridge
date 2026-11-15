@@ -32,8 +32,8 @@ remote-administration product. This guide is for the person who installs and ope
    directly to Windows Credential Manager.
 5. Management scripts for doctor/status, logs, restart, client allowlist, update
    with rollback, and removal.
-6. A native Go agent, with the built-in read-only tools `Processes` and `Diagnose`, plus optional job and gateway tools that
-   are not counted among the nine profile tools.
+6. A native Go agent, with the built-in read-only tools `Processes` and `Diagnose`, plus optional job, gateway and file tools
+   that are not counted among the nine profile tools.
 7. The `winbridge` client for macOS: `hosts`, `adopt`, `status`, `doctor`, `logs`, `restart`, `update`, `call` and `jobs`.
 
 Some upstream documents remain in `docs/` for reference and say so in their header. This file
@@ -300,6 +300,45 @@ that cap, because a brute-force burst can be huge. One refused attempt can appea
 in both counts, so they are not added. Both are read-only and report `SKIP` with the cause when the settings or
 the log cannot be read (for example, a session without administrator rights).
 The doctor writes UTF-8, so accents in a Spanish host's messages arrive intact.
+
+## Let the agent read files (opt-in)
+
+By default the agent cannot read any file. To let it list and read files inside folders you choose, run on the PC (as the
+owner, no elevation):
+
+```powershell
+.\bootstrap\scripts\Set-WinBridgeFiles.ps1 -ReadRoot C:\Users\alice\Shared
+```
+
+The script writes `[files]` to `config\local.toml`, asks the agent to check it and restarts the agent. If the agent refuses
+a folder (a drive root, your whole user profile, `.ssh`, `AppData`, the Start menu, Windows, Program Files, a `PATH` folder or
+WinBridge's own folders), the previous configuration is put back and the error says which folder overlaps. Check from the Mac:
+
+```
+winbridge call ReadFile -args '{"path":"C:\\Users\\alice\\Shared\\notes.txt"}'
+```
+
+The agent also refuses to start if a listed folder does not exist (an unplugged drive, a renamed folder): fix the folder or run
+`-Remove`. You should see the text; a path outside the folder returns `isError: true`. `winbridge status` still says `9 tools`. To turn
+it off run `Set-WinBridgeFiles.ps1 -Remove`. The Python fallback has no file tools. The folders limit a deceived agent, not
+someone who already controls your Windows account; see [ADR 0003](../adr/0003-herramientas-de-archivos-opt-in.md).
+
+### Let the agent write files (opt-in)
+
+Writing is a separate list of folders, and the riskiest part of the file tools (read the write-folder paragraph in
+[`SECURITY.md`](../../SECURITY.md) first). Use an empty folder made for it:
+
+```powershell
+.\bootstrap\scripts\Set-WinBridgeFiles.ps1 -ReadRoot C:\Users\alice\Shared -WriteRoot C:\Users\alice\AgentOut
+```
+
+A write folder is also readable. `WriteFile{path, content, encoding?, overwrite?}` creates a file there only if it does not
+exist (`overwrite=true` replaces it), accepts only `txt md json csv log xml yaml yml toml ini html png jpg pdf` (case
+ignored), needs the parent folder to exist and takes at most `max_bytes` (UTF-8 or `encoding=base64`). Anything else, a
+read-only folder or a path outside returns `isError: true` and writes nothing. The script writes the whole `[files]` table
+every time, so run it with every folder you want: `-ReadRoot` alone drops the write folders. `winbridge doctor` shows
+`files_write` as a warning while a write folder exists and as a failure if it was deleted. A read folder inside a write folder
+is refused (it would be writable); a write folder inside a read folder is fine. On Windows, `overwrite=true` fails with an access error while another program has the target open; the old file stays whole. `-Remove` turns off all file tools.
 
 ## Update and rollback
 
